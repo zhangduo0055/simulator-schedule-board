@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>河南航投航空培训中心 · 模拟机排程展板</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --border: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --row-h: 58px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 28px;
+}
+/* 顶部 */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+}
+.top-bar h1 {
+  font-size: 24px; font-weight: 800; letter-spacing: 0.5px;
+}
+.top-bar h1 span { color: var(--accent); font-weight: 600; font-size: 18px; }
+.right-ctrls { display: flex; gap: 12px; align-items: center; }
+.right-ctrls select {
+  padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 15px; cursor: pointer;
+  font-family: inherit; outline: none; transition: border .2s;
+}
+.right-ctrls select:focus { border-color: var(--accent); }
+.stat-badge {
+  display: flex; gap: 16px; font-size: 14px; color: var(--muted);
+}
+.stat-badge strong { color: var(--text); }
+
+/* 图例 */
+.legend {
+  display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px;
+  padding: 10px 18px; background: var(--card); border-radius: 10px;
+  border: 1px solid var(--border); font-size: 14px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+
+/* 表格容器 */
+.table-wrap {
+  overflow: auto; max-height: 82vh;
+  background: var(--card); border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,.3);
+}
+
+table { border-collapse: collapse; min-width: 100%; table-layout: fixed; }
+th, td { border: 1px solid var(--border); text-align: center; vertical-align: middle; }
+
+/* 表头 */
+th {
+  background: #111827; color: var(--muted); font-weight: 600;
+  font-size: 12px; position: sticky; top: 0; z-index: 3; padding: 6px 1px;
+  white-space: nowrap;
+}
+th.date-col {
+  position: sticky; left: 0; z-index: 5;
+  background: #111827; min-width: 70px; font-size: 14px; color: var(--text);
+}
+th.corner { z-index: 6; }
+
+/* 数据格 */
+td {
+  padding: 0; transition: background .15s;
+  font-size: 11px;
+}
+td:first-child {
+  background: #111827; font-weight: 700; color: var(--text); font-size: 14px;
+  position: sticky; left: 0; z-index: 2;
+  padding: 4px; min-width: 70px;
+}
+td:first-child .dow { font-size: 11px; color: var(--muted); font-weight: 400; }
+td.empty { background: #0f1a2e; }
+td.empty:nth-child(even) { background: #111d33; }
+
+/* 任务块 */
+.task-block {
+  width: 100%; height: 100%; padding: 4px 2px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; border-radius: 3px;
+  cursor: pointer; transition: all .15s; min-height: var(--row-h);
+  position: relative; overflow: hidden;
+  font-weight: 600; letter-spacing: 0.3px;
+}
+.task-block:hover {
+  filter: brightness(1.12);
+  transform: scale(1.03);
+  z-index: 10;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+}
+.task-block .client { font-size: 12px; line-height: 1.2; }
+.task-block .time { font-size: 10px; opacity: .85; margin-top: 1px; }
+.task-block .course { font-size: 9px; opacity: .7; margin-top: 1px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 提示框 */
+.tooltip {
+  display: none; position: fixed; z-index: 100;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; font-size: 14px; max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
+  pointer-events: none; line-height: 1.8;
+}
+.tooltip.show { display: block; }
+.tooltip b { font-size: 15px; }
+.tooltip .dim { color: var(--muted); }
+
+/* 滚动条 */
+.table-wrap::-webkit-scrollbar { width:8px; height:8px; }
+.table-wrap::-webkit-scrollbar-track { background: #0f172a; }
+.table-wrap::-webkit-scrollbar-thumb { background: #475569; border-radius:4px; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>河南航投航空培训中心 <span>模拟机排程展板 · 2026年6月</span></h1>
+  <div class="right-ctrls">
+    <select id="craftFilter" onchange="render()">
+      <option value="all">📋 全部机型</option>
+      <option value="B737NG-1">🛩 B737NG-1</option>
+      <option value="B757/767">🛫 B757/767</option>
+    </select>
+    <div class="stat-badge" id="stats"></div>
+  </div>
+</div>
+<div class="legend" id="legend"></div>
+<div class="table-wrap"><table id="ganttTable"><thead id="ganttHead"></thead><tbody id="ganttBody"></tbody></table></div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const ALL = [{"日期":"2026-06-16","起":"2026-06-16 10:00","止":"2026-06-16 12:00","课目类型":"机务 FBS","学员":null,"教员":null,"检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-16","起":"2026-06-16 13:00","止":"2026-06-16 15:00","课目类型":"机务 FBS","学员":null,"教员":null,"检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-16","起":"2026-06-16 15:00","止":"2026-06-16 17:00","课目类型":"机务 FBS","学员":null,"教员":null,"检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-17","起":"2026-06-17 10:00","止":"2026-06-17 12:00","课目类型":"机务 FBS","学员":null,"教员":null,"检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-17","起":"2026-06-17 13:00","止":"2026-06-17 15:00","课目类型":"机务 FBS","学员":null,"教员":null,"检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-17","起":"2026-06-17 15:00","止":"2026-06-17 17:00","课目类型":"机务 FBS","学员":null,"教员":null,"检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-19","起":"2026-06-19 09:00","止":"2026-06-19 11:00","课目类型":"转机型训练 FBS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-19","起":"2026-06-19 11:15","止":"2026-06-19 13:15","课目类型":"转机型训练 FBS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-20","起":"2026-06-20 09:00","止":"2026-06-20 11:00","课目类型":"转机型训练 FBS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-20","起":"2026-06-20 11:15","止":"2026-06-20 13:15","课目类型":"转机型训练 FBS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-20","起":"2026-06-20 13:15","止":"2026-06-20 15:15","课目类型":"转机型训练 FBS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-20","起":"2026-06-20 15:30","止":"2026-06-20 17:30","课目类型":"转机型训练 FBS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-20","起":"2026-06-20 17:45","止":"2026-06-20 19:45","课目类型":"转机型训练 FBS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-21","起":"2026-06-21 09:00","止":"2026-06-21 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-21","起":"2026-06-21 11:15","止":"2026-06-21 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-21","起":"2026-06-21 13:15","止":"2026-06-21 15:15","课目类型":"转机型训练 FBS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-21","起":"2026-06-21 15:30","止":"2026-06-21 17:30","课目类型":"转机型训练 FBS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-21","起":"2026-06-21 17:45","止":"2026-06-21 19:45","课目类型":"转机型训练 FBS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-22","起":"2026-06-22 09:00","止":"2026-06-22 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-22","起":"2026-06-22 11:15","止":"2026-06-22 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"陈震","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-22","起":"2026-06-22 13:15","止":"2026-06-22 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-22","起":"2026-06-22 15:30","止":"2026-06-22 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-22","起":"2026-06-22 17:45","止":"2026-06-22 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-23","起":"2026-06-23 13:15","止":"2026-06-23 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-23","起":"2026-06-23 15:30","止":"2026-06-23 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-23","起":"2026-06-23 17:45","止":"2026-06-23 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-24","起":"2026-06-24 09:00","止":"2026-06-24 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-24","起":"2026-06-24 11:15","止":"2026-06-24 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-25","起":"2026-06-25 09:00","止":"2026-06-25 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-25","起":"2026-06-25 11:15","止":"2026-06-25 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-25","起":"2026-06-25 13:15","止":"2026-06-25 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-25","起":"2026-06-25 15:30","止":"2026-06-25 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-25","起":"2026-06-25 17:45","止":"2026-06-25 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-26","起":"2026-06-26 09:00","止":"2026-06-26 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-26","起":"2026-06-26 11:15","止":"2026-06-26 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-26","起":"2026-06-26 13:15","止":"2026-06-26 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-26","起":"2026-06-26 15:30","止":"2026-06-26 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-26","起":"2026-06-26 17:45","止":"2026-06-26 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-27","起":"2026-06-27 09:00","止":"2026-06-27 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-27","起":"2026-06-27 11:15","止":"2026-06-27 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-27","起":"2026-06-27 13:15","止":"2026-06-27 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-27","起":"2026-06-27 15:30","止":"2026-06-27 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-27","起":"2026-06-27 17:45","止":"2026-06-27 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-28","起":"2026-06-28 13:15","止":"2026-06-28 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-28","起":"2026-06-28 15:30","止":"2026-06-28 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-28","起":"2026-06-28 17:45","止":"2026-06-28 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-29","起":"2026-06-29 09:00","止":"2026-06-29 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-29","起":"2026-06-29 11:15","止":"2026-06-29 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-30","起":"2026-06-30 09:00","止":"2026-06-30 11:00","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-30","起":"2026-06-30 11:15","止":"2026-06-30 13:15","课目类型":"转机型训练 FFS","学员":"陈庆 许珂","教员":"傅作彪","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-30","起":"2026-06-30 13:15","止":"2026-06-30 15:15","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-30","起":"2026-06-30 15:30","止":"2026-06-30 17:30","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-30","起":"2026-06-30 17:45","止":"2026-06-30 19:45","课目类型":"转机型训练 FFS","学员":"赵琦 郭建伟 梁家菘","教员":"刘勇亮","检查员":null,"客户航司":"圆通航空","机位":"B757\/767","时长h":2},{"日期":"2026-06-01","起":"2026-06-01 09:00","止":"2026-06-01 11:00","课目类型":"个人训练","学员":null,"教员":null,"检查员":null,"客户航司":"个人自费","机位":"B737NG-1","时长h":2},{"日期":"2026-06-01","起":"2026-06-01 13:00","止":"2026-06-01 14:00","课目类型":"个人训练","学员":null,"教员":null,"检查员":null,"客户航司":"个人自费","机位":"B737NG-1","时长h":1},{"日期":"2026-06-01","起":"2026-06-01 15:00","止":"2026-06-01 17:00","课目类型":"个人训练","学员":null,"教员":null,"检查员":null,"客户航司":"个人自费","机位":"B737NG-1","时长h":2},{"日期":"2026-06-02","起":"2026-06-02 10:00","止":"2026-06-02 11:00","课目类型":"个人训练","学员":null,"教员":null,"检查员":null,"客户航司":"个人自费","机位":"B737NG-1","时长h":1},{"日期":"2026-06-02","起":"2026-06-02 14:00","止":"2026-06-02 20:00","课目类型":"复训","学员":"张丁 杨泱 朱跃虎","教员":"聂宇","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-03","起":"2026-06-03 10:00","止":"2026-06-03 11:00","课目类型":"个人训练","学员":null,"教员":null,"检查员":null,"客户航司":"个人自费","机位":"B737NG-1","时长h":1},{"日期":"2026-06-03","起":"2026-06-03 14:00","止":"2026-06-03 20:00","课目类型":"复训","学员":"张丁 杨泱 朱跃虎","教员":"聂宇","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-04","起":"2026-06-04 12:00","止":"2026-06-04 18:00","课目类型":"复训","学员":"张丁 杨泱 朱跃虎","教员":"聂宇 检查员：严春华","检查员":"严春华","客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-04","起":"2026-06-04 18:00","止":"2026-06-04 22:00","课目类型":"补充训练","学员":"刘森林 黄伟龙","教员":"胡传杰","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":4},{"日期":"2026-06-05","起":"2026-06-05 12:00","止":"2026-06-05 16:00","课目类型":"90天3起落","学员":"李翔 刘博 张立永 张毅","教员":null,"检查员":"严春华","客户航司":"龙浩航空","机位":"B737NG-1","时长h":4},{"日期":"2026-06-05","起":"2026-06-05 18:00","止":"2026-06-05 22:00","课目类型":"补充训练","学员":"刘森林 黄伟龙","教员":"胡传杰","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":4},{"日期":"2026-06-06","起":"2026-06-06 12:00","止":"2026-06-06 18:00","课目类型":"120天100小时检查","学员":"耿晗 李隆毓 孙德龙","教员":null,"检查员":"严春华","客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-06","起":"2026-06-06 18:00","止":"2026-06-06 20:00","课目类型":"补充训练","学员":"刘森林 黄伟龙","教员":"胡传杰","检查员":"刘昕","客户航司":"龙浩航空","机位":"B737NG-1","时长h":4},{"日期":"2026-06-07","起":"2026-06-07 12:00","止":"2026-06-07 16:00","课目类型":"补充训练","学员":"杨扬 胡谦","教员":null,"检查员":"刘昕","客户航司":"龙浩航空","机位":"B737NG-1","时长h":4},{"日期":"2026-06-08","起":"2026-06-08 12:00","止":"2026-06-08 18:00","课目类型":"复训","学员":"姜永峰 杨瑞光 陈禹纲","教员":"王金国","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-09","起":"2026-06-09 12:00","止":"2026-06-09 18:00","课目类型":"复训","学员":"姜永峰 杨瑞光 陈禹纲","教员":"王金国","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-10","起":"2026-06-10 12:00","止":"2026-06-10 18:00","课目类型":"复训","学员":"姜永峰 杨瑞光 陈禹纲","教员":"王金国 检查员：潘冲","检查员":"潘冲","客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-11","起":"2026-06-11 14:00","止":"2026-06-11 20:00","课目类型":"强化训练","学员":"潘冲 王金国 高云扬","教员":"路修远","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-12","起":"2026-06-12 14:00","止":"2026-06-12 20:00","课目类型":"强化训练","学员":"胡传杰 郑汉 岳俊翔","教员":"路修远","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-13","起":"2026-06-13 12:00","止":"2026-06-13 18:00","课目类型":"复训","学员":"盛文 刘一丁 李泽凯","教员":"胡传杰","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-14","起":"2026-06-14 12:00","止":"2026-06-14 18:00","课目类型":"复训","学员":"盛文 刘一丁 李泽凯","教员":"胡传杰","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-15","起":"2026-06-15 17:00","止":"2026-06-15 23:00","课目类型":"复训","学员":"盛文 刘一丁 李泽凯","教员":"胡传杰 检查员：高原","检查员":"高原","客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-16","起":"2026-06-16 16:00","止":"2026-06-16 22:00","课目类型":"强化训练","学员":"高原 韩安藻 严春华","教员":"陈晓兵","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-17","起":"2026-06-17 14:00","止":"2026-06-17 18:00","课目类型":"90天3起落","学员":"臧曰镇 蒋海军 贾运峰 刘金强","教员":null,"检查员":"高原","客户航司":"龙浩航空","机位":"B737NG-1","时长h":4},{"日期":"2026-06-17","起":"2026-06-17 18:00","止":"2026-06-17 24:00","课目类型":"强化训练","学员":"聂宇 孙嘉阳 刘昕","教员":"陈晓兵","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":6},{"日期":"2026-06-23","起":"2026-06-23 12:00","止":"2026-06-23 16:00","课目类型":"下半年复训科目验证","学员":"黄恩超 孙建增","教员":"路修远\/盛文","检查员":null,"客户航司":"龙浩航空","机位":"B737NG-1","时长h":4}];
+const COLORS = {"圆通航空": {"bg": "#F97316", "hover": "#EA580C", "text": "#fff"}, "龙浩航空": {"bg": "#3B82F6", "hover": "#2563EB", "text": "#fff"}, "个人自费": {"bg": "#8B5CF6", "hover": "#7C3AED", "text": "#fff"}, "邮政航空": {"bg": "#06B6D4", "hover": "#0891B2", "text": "#fff"}, "江西航空": {"bg": "#10B981", "hover": "#059669", "text": "#fff"}, "乌鲁木齐航空": {"bg": "#EC4899", "hover": "#DB2777", "text": "#fff"}};
+const MONTH = 6, YEAR = 2026;
+
+function tm(s) {
+  if (!s || s==='nan') return 0;
+  const t = s.includes(' ') ? s.split(' ')[1] : s;
+  const p = t.split(':');
+  return parseInt(p[0])*60 + parseInt(p[1]);
+}
+
+function db(val) { return val && val !== 'nan' ? val : ''; }
+
+function render() {
+  const filter = document.getElementById('craftFilter').value;
+  let tasks = filter==='all' ? ALL : ALL.filter(t=>t.机位===filter);
+
+  // 找时间范围（精确到半小时）
+  let loMin = 24*60, hiMin = 0;
+  tasks.forEach(t=>{
+    const s=tm(t.起), e=tm(t.止);
+    if(s>0) loMin = Math.min(loMin, s);
+    if(e>0) hiMin = Math.max(hiMin, e);
+  });
+  if (loMin>=hiMin) { loMin=7*60; hiMin=22*60; }
+  const loSlot = Math.max(0, Math.floor(loMin/30) - 2);
+  const hiSlot = Math.ceil(hiMin/30) + 2;
+  const totalSlots = hiSlot - loSlot;
+  
+  function slotH(slot) { return Math.floor(slot/2); }
+  function slotLabel(slot) { return `${slotH(slot).toString().padStart(2,'0')}:${slot%2===0?'00':'30'}`; }
+  
+  // 构建网格: day→slotId→任务信息
+  // slotId = loSlot开始的偏移
+  const grid = {};
+  tasks.forEach(t=>{
+    if (!t.日期 || t.日期==='nan') return;
+    const day = parseInt(t.日期.substring(8,10));
+    const sm = tm(t.起), em = tm(t.止);
+    const startSlot = Math.max(0, Math.floor(sm/30));
+    const endSlot = Math.ceil(em/30);
+    const client = db(t.客户航司);
+    const color = COLORS[client] || {bg:'#6b7280',hover:'#4b5563',text:'#fff'};
+    if (!grid[day]) grid[day] = {};
+    
+    // 任务占用从startSlot到endSlot-1的所有格子
+    // 只在起始格放任务信息，后续格标记为continuation
+    for (let si = startSlot; si < endSlot; si++) {
+      if (si < loSlot || si >= hiSlot) continue;
+      const idx = si - loSlot;
+      if (!grid[day][idx]) {
+        grid[day][idx] = {
+          client, course:db(t.课目类型),
+          stStr:(t.起||'').split(' ').pop()||'',
+          etStr:(t.止||'').split(' ').pop()||'',
+          duration: db(t['时长h']),
+          students:db(t.学员), trainer:db(t.教员), inspector:db(t.检查员),
+          color, colspan: 1, isStart: false
+        };
+      }
+    }
+    // 标记起始格（整半小时的首格）
+    const firstIdx = startSlot - loSlot;
+    if (grid[day] && grid[day][firstIdx]) {
+      grid[day][firstIdx].isStart = true;
+      grid[day][firstIdx].colspan = Math.min(endSlot, hiSlot) - Math.max(startSlot, loSlot);
+    }
+  });
+
+  const usedDays = Object.keys(grid).map(Number).sort((a,b)=>a-b);
+  const WDAYS = ['日','一','二','三','四','五','六'];
+
+  // 图例
+  const clients = [...new Set(tasks.map(t=>db(t.客户航司)).filter(Boolean))];
+  document.getElementById('legend').innerHTML = clients.map(c=>{
+    const co = COLORS[c]||{bg:'#6b7280'};
+    return `<div class="legend-item"><span class="legend-dot" style="background:${co.bg}"></span>${c}</div>`;
+  }).join('');
+  document.getElementById('stats').innerHTML = `<strong>${tasks.length}</strong>场 · <strong>${clients.length}</strong>家航司`;
+
+  // 表头：每个半小时格一个标签
+  let thead = '<tr><th class="corner date-col" style="white-space:normal;">日期<br>航司</th>';
+  for (let si=loSlot; si<hiSlot; si++) {
+    thead += `<th>${slotLabel(si)}</th>`;
+  }
+  thead += '</tr>';
+  document.getElementById('ganttHead').innerHTML = thead;
+
+  // 表体：直接用半小时格，有任务的格colspan
+  let tbody = '';
+  usedDays.forEach(day=>{
+    const ds = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
+    const wd = WDAYS[new Date(ds).getDay()];
+    tbody += `<tr><td>${day}<span class="dow"> 周${wd}</span></td>`;
+    
+    let si = loSlot;
+    while (si < hiSlot) {
+      const idx = si - loSlot;
+      const g = grid[day] && grid[day][idx];
+      if (g && g.isStart) {
+        // 起始格 → 显示任务块，colspan=任务跨的格数
+        const jdata = JSON.stringify({client:g.client,course:g.course,stStr:g.stStr,etStr:g.etStr,duration:g.duration,students:g.students,trainer:g.trainer,inspector:g.inspector}).replace(/"/g,'&quot;');
+        tbody += `<td colspan="${g.colspan}"><div class="task-block" style="background:${g.color.bg};color:${g.color.text}"
+          onmouseenter="showTip(event, this, ${jdata})" onmouseleave="hideTip()">
+          <span class="client">${g.client.replace('航空','')}</span>
+          <span class="time">${g.stStr}-${g.etStr} (${g.duration}h)</span>
+        </div></td>`;
+        si += g.colspan;
+      } else if (g && !g.isStart) {
+        // 任务延续格 → 已被colspan覆盖，跳过
+        // 实际上如果isStart的colspan已经覆盖了这些格，这里不会执行到
+        // 但如果格子里有数据但被标记为非起始格，说明有bug
+        tbody += '<td class="empty"></td>';
+        si++;
+      } else {
+        tbody += '<td class="empty"></td>';
+        si++;
+      }
+    }
+    tbody += '</tr>';
+  });
+  document.getElementById('ganttBody').innerHTML = tbody;
+}
+
+function showTip(e, el, g) {
+  const tt = document.getElementById('tooltip');
+  const lines = [];
+  if(g.course) lines.push(`<b>${g.course}</b>`);
+  lines.push(`<span class="dim">时间:</span> ${g.stStr} - ${g.etStr} (${g.duration}h)`);
+  if(g.students) lines.push(`<span class="dim">学员:</span> ${g.students}`);
+  if(g.trainer) lines.push(`<span class="dim">教员:</span> ${g.trainer}`);
+  if(g.inspector) lines.push(`<span class="dim">检查员:</span> ${g.inspector}`);
+  tt.innerHTML = lines.join('<br>');
+  tt.classList.add('show');
+  const x = Math.min(e.clientX+14, window.innerWidth-340);
+  tt.style.left = x+'px';
+  tt.style.top = (e.clientY-10)+'px';
+}
+function hideTip() { document.getElementById('tooltip').classList.remove('show'); }
+
+render();
+</script>
+</body>
+</html>
