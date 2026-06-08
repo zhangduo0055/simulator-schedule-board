@@ -291,6 +291,19 @@ function saveChanges(changes) {
   localStorage.setItem(LS_KEY, JSON.stringify(changes));
 }
 
+// 检查任务时间是否与同日期其他任务重叠
+function checkOverlap(task, excludeId) {
+  const others = getEffectiveTasks().filter(t => t._id !== excludeId && t.日期 === task.日期 && t.机位 === task.机位);
+  const t1s = tm(task.起), t1e = tm(task.止);
+  if (!t1s || !t1e) return false;
+  for (const o of others) {
+    const t2s = tm(o.起), t2e = tm(o.止);
+    if (!t2s || !t2e) continue;
+    if (t1s < t2e && t1e > t2s) return o; // overlap found, return the conflicting task
+  }
+  return null;
+}
+
 // 合并原始数据 + 变更 → 渲染用数据
 function getEffectiveTasks() {
   const ch = loadChanges();
@@ -420,6 +433,9 @@ function handleDrop(e) {
   updated.止 = `${newDate} ${endStr}`;
   updated.时长h = colspan * 0.5;
 
+  const conflict = checkOverlap(updated, taskId);
+  if (conflict) { dragInfo = null; render(); toast('时间冲突：与已有任务重叠', 'error'); return; }
+
   const ch = loadChanges();
   const isNew = ch.added.some(t => t._id === taskId);
   if (isNew) {
@@ -495,6 +511,9 @@ function handleResizeEnd(e) {
   const endMin = startMin + newDuration * 60;
   const eh = Math.floor(endMin / 60), em = endMin % 60;
   updated.止 = `${task.日期} ${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
+
+  const conflict = checkOverlap(updated, rs.taskId);
+  if (conflict) { render(); toast('时间冲突：拉长后与已有任务重叠', 'error'); return; }
 
   const ch = loadChanges();
   const isNew = ch.added.some(t => t._id === rs.taskId);
@@ -744,6 +763,10 @@ function saveTask(mode) {
     机位: document.getElementById('fPos').value,
     时长h: duration
   };
+
+  const eid = mode === 'add' ? null : currentEditId;
+  const conflict = checkOverlap(task, eid);
+  if (conflict) { toast('时间冲突：与已有任务重叠', 'error'); return; }
 
   const ch = loadChanges();
 
