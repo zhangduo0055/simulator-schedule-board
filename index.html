@@ -468,29 +468,24 @@ function handleResizeMove(e) {
     ? parseInt(rs.block.closest('td').dataset.slot)
     : rs.slot;
 
-  // 计算鼠标相对于第一个时间列的位置
-  const firstTimeCell = cells[1]; // index 0 is date label
+  const firstTimeCell = cells[1];
   if (!firstTimeCell) return;
   const cellWidth = firstTimeCell.offsetWidth || 30;
   const rect = firstTimeCell.getBoundingClientRect();
   const deltaSlots = Math.round((e.clientX - rect.right + cellWidth/2) / cellWidth) - baseIdx;
   const newColspan = Math.max(1, rs.colspan + deltaSlots);
 
-  // 检查不超出行
   if (baseIdx + newColspan > cells.length - 1) return;
 
-  // 临时更新 colspan 和视觉
+  // 只用 CSS 宽度预览，不改 colspan（避免 table reflow 影响相邻格）
+  rs.block.style.width = (newColspan * cellWidth) + 'px';
   rs.block.dataset.colspan = newColspan;
-  rs.td.colSpan = newColspan;
 
-  // 显示新时长
   const newDuration = (newColspan * 0.25).toFixed(1);
   const timeEl = rs.block.querySelector('.time');
   if (timeEl) {
     const parts = timeEl.textContent.split(' (');
-    if (parts.length >= 2) {
-      timeEl.textContent = parts[0] + ' (' + newDuration + 'h)';
-    }
+    if (parts.length >= 2) timeEl.textContent = parts[0] + ' (' + newDuration + 'h)';
   }
 }
 
@@ -556,7 +551,7 @@ function render() {
   function slotH(slot) { return Math.floor(slot/4); }
   function slotLabel(slot) { const m=(slot%4)*15; return `${slotH(slot).toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; }
 
-  const grid = {};
+  const grid = {}; const stackByDay = {};
   tasks.forEach(t => {
     if (!t.日期 || t.日期==='nan') return;
     const day = parseInt(t.日期.substring(8,10));
@@ -566,12 +561,15 @@ function render() {
     const client = db(t.客户航司);
     const color = COLORS[client] || COLORS['default'] || {bg:'#6b7280',hover:'#4b5563',text:'#fff'};
     if (!grid[day]) grid[day] = {};
+    if (!stackByDay[day]) stackByDay[day] = {};
 
     for (let si = startSlot; si < endSlot; si++) {
       if (si < loSlot || si >= hiSlot) continue;
       const idx = si - loSlot;
-      if (!grid[day][idx]) {
-        grid[day][idx] = {
+      if (!grid[day][idx]) grid[day][idx] = [];
+      // 避免重复添加
+      if (!grid[day][idx].some(e => e._id === t._id)) {
+        grid[day][idx].push({
           client, course: db(t.课目类型),
           stStr: (t.起||'').split(' ').pop()||'',
           etStr: (t.止||'').split(' ').pop()||'',
@@ -579,13 +577,18 @@ function render() {
           students: db(t.学员), trainer: db(t.教员), inspector: db(t.检查员),
           color, colspan: 1, isStart: false,
           _id: t._id, _status: t._status
-        };
+        });
       }
+      stackByDay[day][idx] = (stackByDay[day][idx]||0) + 1;
     }
     const firstIdx = startSlot - loSlot;
-    if (grid[day] && grid[day][firstIdx]) {
-      grid[day][firstIdx].isStart = true;
-      grid[day][firstIdx].colspan = Math.min(endSlot, hiSlot) - Math.max(startSlot, loSlot);
+    const arr = grid[day] && grid[day][firstIdx];
+    if (arr) {
+      const mine = arr.find(e => e._id === t._id);
+      if (mine) {
+        mine.isStart = true;
+        mine.colspan = Math.min(endSlot, hiSlot) - Math.max(startSlot, loSlot);
+      }
     }
   });
 
@@ -608,32 +611,42 @@ function render() {
   usedDays.forEach(day => {
     const ds = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
     const wd = WDAYS[new Date(ds).getDay()];
-    tbody += `<tr><td>${day}<span class="dow"> 周${wd}</span></td>`;
+    const maxStack = Math.max(...Object.values(stackByDay[day]||{}), 1);
+    const rowH = Math.max(58, maxStack * 44);
+    tbody += `<tr style="height:${rowH}px"><td style="height:${rowH}px">${day}<span class="dow"> 周${wd}</span></td>`;
 
     let si = loSlot;
     while (si < hiSlot) {
       const idx = si - loSlot;
-      const g = grid[day] && grid[day][idx];
-      if (g && g.isStart) {
-        const statusClass = g._status === 'added' ? ' added' : g._status === 'modified' ? ' changed' : '';
-        const encodedId = encodeURIComponent(g._id||'');
-        tbody += `<td colspan="${g.colspan}" data-day="${day}" data-slot="${idx}" data-lo-slot="${loSlot}"><div class="task-block${statusClass}" style="background:${g.color.bg};color:${g.color.text}"
-          draggable="true"
-          data-task-id="${encodedId}"
-          data-colspan="${g.colspan}"
-          data-duration="${g.duration}"
-          ondragstart="handleDragStart(event)"
-          ondragend="handleDragEnd(event)"
-          onclick="openEditModal('${encodedId}')"
-          onmouseenter="showTip(event, '${esc(g.course)}','${esc(g.stStr)}','${esc(g.etStr)}','${esc(g.duration)}','${esc(g.students)}','${esc(g.trainer)}','${esc(g.inspector)}')"
-          onmouseleave="hideTip()">
-          <span class="drag-handle">⋮⋮</span>
-          <span class="edit-icon">✎</span>
-          <span class="client">${esc(g.client.replace('航空',''))}</span>
-          <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
-          <span class="resize-handle" onmousedown="handleResizeStart(event,'${encodedId}')" onclick="event.stopPropagation()">║</span>
-        </div></td>`;
-        si += g.colspan;
+      const arr = grid[day] && grid[day][idx];
+      const startTasks = arr ? arr.filter(g => g.isStart) : [];
+
+      if (startTasks.length > 0) {
+        const maxColspan = Math.max(...startTasks.map(g => g.colspan));
+        const n = startTasks.length;
+        const blocksHTML = startTasks.map((g, i) => {
+          const statusClass = g._status === 'added' ? ' added' : g._status === 'modified' ? ' changed' : '';
+          const encodedId = encodeURIComponent(g._id||'');
+          const hPct = n > 1 ? (100/n).toFixed(1) + '%' : '100%';
+          return `<div class="task-block${statusClass}" style="background:${g.color.bg};color:${g.color.text};height:${hPct};min-height:0;flex-shrink:0"
+            draggable="true"
+            data-task-id="${encodedId}"
+            data-colspan="${g.colspan}"
+            data-duration="${g.duration}"
+            ondragstart="handleDragStart(event)"
+            ondragend="handleDragEnd(event)"
+            onclick="openEditModal('${encodedId}')"
+            onmouseenter="showTip(event, '${esc(g.course)}','${esc(g.stStr)}','${esc(g.etStr)}','${esc(g.duration)}','${esc(g.students)}','${esc(g.trainer)}','${esc(g.inspector)}')"
+            onmouseleave="hideTip()">
+            <span class="drag-handle">⋮⋮</span>
+            <span class="edit-icon">✎</span>
+            <span class="client">${esc(g.client.replace('航空',''))}</span>
+            <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
+            <span class="resize-handle" onmousedown="handleResizeStart(event,'${encodedId}')" onclick="event.stopPropagation()">║</span>
+          </div>`;
+        }).join('');
+        tbody += `<td colspan="${maxColspan}" data-day="${day}" data-slot="${idx}" data-lo-slot="${loSlot}" style="vertical-align:top;padding:0">${blocksHTML}</td>`;
+        si += maxColspan;
       } else {
         tbody += `<td class="empty" data-day="${day}" data-slot="${idx}" data-lo-slot="${loSlot}" ondragover="handleDragOver(event)" ondrop="handleDrop(event)"></td>`;
         si++;
