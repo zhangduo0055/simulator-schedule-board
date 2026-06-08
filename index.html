@@ -152,8 +152,11 @@ td.empty:nth-child(even) { background:#111d33; }
 
 /* ── 拖拽相关 ── */
 .drag-handle { font-size:11px; color:rgba(255,255,255,.4); cursor:grab; line-height:1; user-select:none; }
+.resize-handle { font-size:14px; color:rgba(255,255,255,.3); cursor:ew-resize; line-height:1; user-select:none; position:absolute; right:4px; top:50%; transform:translateY(-50%); padding:2px 4px; }
+.resize-handle:hover { color:rgba(255,255,255,.8); background:rgba(255,255,255,.1); border-radius:3px; }
 .task-block[draggable="true"] { cursor:grab; }
 .task-block.dragging { opacity:.3; }
+.task-block.resizing { opacity:.6; }
 td.drop-target { background: rgba(56,189,248,.15) !important; outline:2px dashed var(--accent); outline-offset:-2px; }
 td.drop-invalid { background: rgba(239,68,68,.1) !important; }
 
@@ -399,8 +402,8 @@ function handleDrop(e) {
   const colspan = dragInfo.colspan;
   const endSlot = absoluteSlot + colspan;
 
-  const sh = Math.floor(absoluteSlot/2), sm = (absoluteSlot%2)*30;
-  const eh = Math.floor(endSlot/2), em = (endSlot%2)*30;
+  const sh = Math.floor(absoluteSlot/4), sm = (absoluteSlot%4)*15;
+  const eh = Math.floor(endSlot/4), em = (endSlot%4)*15;
   const newDate = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
   const startStr = `${sh.toString().padStart(2,'0')}:${sm.toString().padStart(2,'0')}`;
   const endStr = `${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
@@ -413,7 +416,7 @@ function handleDrop(e) {
   updated.日期 = newDate;
   updated.起 = `${newDate} ${startStr}`;
   updated.止 = `${newDate} ${endStr}`;
-  updated.时长h = colspan / 2;
+  updated.时长h = colspan * 0.25;
 
   const ch = loadChanges();
   const isNew = ch.added.some(t => t._id === taskId);
@@ -432,6 +435,106 @@ function handleDrop(e) {
 }
 
 // ══════════════════════════════════════════════
+// 拉长/缩短（resize）
+// ══════════════════════════════════════════════
+let resizeState = null;
+
+function handleResizeStart(e, encodedId) {
+  e.stopPropagation();
+  e.preventDefault();
+  const block = e.target.closest('.task-block');
+  const td = block.closest('td');
+  const taskId = decodeURIComponent(encodedId);
+  const colspan = parseInt(block.dataset.colspan) || 1;
+  const day = parseInt(td.dataset.day);
+  const slot = parseInt(td.dataset.slot);
+  const loSlot = parseInt(td.dataset.loSlot);
+
+  resizeState = {
+    taskId, colspan, day, slot, loSlot,
+    startX: e.clientX, block, td,
+    row: td.closest('tr')
+  };
+  block.classList.add('resizing');
+  document.addEventListener('mousemove', handleResizeMove);
+  document.addEventListener('mouseup', handleResizeEnd);
+}
+
+function handleResizeMove(e) {
+  if (!resizeState) return;
+  const rs = resizeState;
+  const cells = rs.row.querySelectorAll('td');
+  const baseIdx = (rs.block.closest('td').dataset.slot !== undefined)
+    ? parseInt(rs.block.closest('td').dataset.slot)
+    : rs.slot;
+
+  // 计算鼠标相对于第一个时间列的位置
+  const firstTimeCell = cells[1]; // index 0 is date label
+  if (!firstTimeCell) return;
+  const cellWidth = firstTimeCell.offsetWidth || 30;
+  const rect = firstTimeCell.getBoundingClientRect();
+  const deltaSlots = Math.round((e.clientX - rect.right + cellWidth/2) / cellWidth) - baseIdx;
+  const newColspan = Math.max(1, rs.colspan + deltaSlots);
+
+  // 检查不超出行
+  if (baseIdx + newColspan > cells.length - 1) return;
+
+  // 临时更新 colspan 和视觉
+  rs.block.dataset.colspan = newColspan;
+  rs.td.colSpan = newColspan;
+
+  // 显示新时长
+  const newDuration = (newColspan * 0.25).toFixed(1);
+  const timeEl = rs.block.querySelector('.time');
+  if (timeEl) {
+    const parts = timeEl.textContent.split(' (');
+    if (parts.length >= 2) {
+      timeEl.textContent = parts[0] + ' (' + newDuration + 'h)';
+    }
+  }
+}
+
+function handleResizeEnd(e) {
+  document.removeEventListener('mousemove', handleResizeMove);
+  document.removeEventListener('mouseup', handleResizeEnd);
+  if (!resizeState) return;
+  const rs = resizeState;
+
+  const newColspan = parseInt(rs.block.dataset.colspan) || rs.colspan;
+  const newDuration = parseFloat((newColspan * 0.25).toFixed(1));
+  const taskId = rs.taskId;
+
+  // 查找任务
+  const effective = getEffectiveTasks();
+  const task = effective.find(t => t._id === taskId);
+  if (!task) { resizeState = null; render(); return; }
+
+  const updated = { ...task };
+  updated.时长h = newDuration;
+  // 重新计算结束时间
+  const startMin = tm(task.起);
+  const endMin = startMin + newDuration * 60;
+  const eh = Math.floor(endMin / 60), em = endMin % 60;
+  const dateStr = task.日期;
+  updated.止 = `${dateStr} ${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
+
+  const ch = loadChanges();
+  const isNew = ch.added.some(t => t._id === taskId);
+  if (isNew) {
+    ch.added = ch.added.map(t => t._id === taskId ? updated : t);
+  } else {
+    if (ch.deleted && ch.deleted.includes(taskId)) {
+      ch.deleted = ch.deleted.filter(d => d !== taskId);
+    }
+    ch.modified[taskId] = updated;
+  }
+  saveChanges(ch);
+  resizeState = null;
+  render();
+  toast(`时长已更新为 ${newDuration}h`, 'success');
+}
+
+// ══════════════════════════════════════════════
 // 渲染
 // ══════════════════════════════════════════════
 function render() {
@@ -447,19 +550,19 @@ function render() {
     if (e>0) hiMin = Math.max(hiMin, e);
   });
   if (loMin >= hiMin) { loMin = 7*60; hiMin = 22*60; }
-  const loSlot = Math.max(0, Math.floor(loMin/30) - 2);
-  const hiSlot = Math.ceil(hiMin/30) + 2;
+  const loSlot = Math.max(0, Math.floor(loMin/15) - 4);
+  const hiSlot = Math.ceil(hiMin/15) + 4;
 
-  function slotH(slot) { return Math.floor(slot/2); }
-  function slotLabel(slot) { return `${slotH(slot).toString().padStart(2,'0')}:${slot%2===0?'00':'30'}`; }
+  function slotH(slot) { return Math.floor(slot/4); }
+  function slotLabel(slot) { const m=(slot%4)*15; return `${slotH(slot).toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; }
 
   const grid = {};
   tasks.forEach(t => {
     if (!t.日期 || t.日期==='nan') return;
     const day = parseInt(t.日期.substring(8,10));
     const sm = tm(t.起), em = tm(t.止);
-    const startSlot = Math.max(0, Math.floor(sm/30));
-    const endSlot = Math.ceil(em/30);
+    const startSlot = Math.max(0, Math.floor(sm/15));
+    const endSlot = Math.ceil(em/15);
     const client = db(t.客户航司);
     const color = COLORS[client] || COLORS['default'] || {bg:'#6b7280',hover:'#4b5563',text:'#fff'};
     if (!grid[day]) grid[day] = {};
@@ -528,6 +631,7 @@ function render() {
           <span class="edit-icon">✎</span>
           <span class="client">${esc(g.client.replace('航空',''))}</span>
           <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
+          <span class="resize-handle" onmousedown="handleResizeStart(event,'${encodedId}')" onclick="event.stopPropagation()">║</span>
         </div></td>`;
         si += g.colspan;
       } else {
@@ -615,9 +719,9 @@ function buildModal(mode, task) {
       </label>
     </div>
     <div class="form-row">
-      <label>开始时间 <input type="time" id="fStart" value="${(task.起||'').split(' ').pop()||''}"></label>
-      <label>结束时间 <input type="time" id="fEnd" value="${(task.止||'').split(' ').pop()||''}"></label>
-      <label>时长(h) <input type="number" id="fDur" value="${task.时长h||2}" min="1" max="12" style="width:70px"></label>
+      <label>开始时间 <input type="time" id="fStart" value="${(task.起||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
+      <label>结束时间 <input type="time" id="fEnd" value="${(task.止||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
+      <label>时长(h) <input type="text" id="fDur" value="${task.时长h||2}" style="width:60px" readonly></label>
     </div>
     <div class="form-row">
       <label>课目类型
@@ -650,15 +754,31 @@ function closeModal() {
   currentEditId = null;
 }
 
+function calcDuration() {
+  const sv = document.getElementById('fStart').value;
+  const ev = document.getElementById('fEnd').value;
+  if (!sv || !ev) return;
+  const [sh, sm] = sv.split(':').map(Number);
+  const [eh, em] = ev.split(':').map(Number);
+  const mins = (eh*60+em) - (sh*60+sm);
+  const dur = mins > 0 ? (mins/60) : 0;
+  document.getElementById('fDur').value = dur.toFixed(1);
+}
+
 function saveTask(mode) {
   const dateVal = document.getElementById('fDate').value;
   const startVal = document.getElementById('fStart').value;
   const endVal = document.getElementById('fEnd').value;
-  const durVal = document.getElementById('fDur').value;
 
   if (!dateVal) { toast('请填写日期', 'error'); return; }
   if (!startVal) { toast('请填写开始时间', 'error'); return; }
   if (!endVal) { toast('请填写结束时间', 'error'); return; }
+
+  // 自动计算时长
+  const [sh, sm] = startVal.split(':').map(Number);
+  const [eh, em] = endVal.split(':').map(Number);
+  const totalMin = (eh*60+em) - (sh*60+sm);
+  const duration = totalMin > 0 ? parseFloat((totalMin/60).toFixed(1)) : 0.25;
 
   const task = {
     日期: dateVal,
@@ -670,7 +790,7 @@ function saveTask(mode) {
     检查员: document.getElementById('fInspector').value || null,
     客户航司: document.getElementById('fClient').value,
     机位: document.getElementById('fPos').value,
-    时长h: parseInt(durVal) || 2
+    时长h: duration
   };
 
   const ch = loadChanges();
