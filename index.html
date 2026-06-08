@@ -42,6 +42,10 @@ body {
 .stat-badge { display:flex; gap:16px; font-size:14px; color:var(--muted); }
 .stat-badge strong { color:var(--text); }
 
+/* ── 机型分区标题 ── */
+.section-title { font-size:20px; font-weight:700; padding:8px 0 4px; }
+.section-title .pos-tag { display:inline-block; padding:3px 12px; border-radius:6px; font-size:16px; }
+
 /* ── 图例 ── */
 .legend { display:flex; gap:18px; flex-wrap:wrap; margin-bottom:14px; padding:10px 18px; background:var(--card); border-radius:10px; border:1px solid var(--border); font-size:14px; }
 .legend-item { display:flex; align-items:center; gap:8px; }
@@ -186,19 +190,18 @@ td.drop-invalid { background: rgba(239,68,68,.1) !important; }
   </div>
   <div class="right-ctrls">
     <button class="ctrl-btn primary" onclick="openAddModal()">＋ 新增任务</button>
-    <select id="craftFilter" onchange="render()">
-      <option value="all">📋 全部机型</option>
-      <option value="B737NG-1">🛩 B737NG-1</option>
-      <option value="B757/767">🛫 B757/767</option>
-    </select>
     <div class="stat-badge" id="stats"></div>
     <button class="ctrl-btn export" onclick="toggleExportPanel()">📤 导出变更</button>
     <button class="ctrl-btn danger" onclick="clearAllChanges()">↺ 撤销变更</button>
     <span class="change-badge" id="changeBadge">0</span>
   </div>
 </div>
-<div class="legend" id="legend"></div>
-<div class="table-wrap"><table id="ganttTable"><thead id="ganttHead"></thead><tbody id="ganttBody"></tbody></table></div>
+<div class="section-title" id="secTitle737"></div>
+<div class="legend" id="legend737"></div>
+<div class="table-wrap" style="margin-bottom:24px"><table><thead id="thead737"></thead><tbody id="tbody737"></tbody></table></div>
+<div class="section-title" id="secTitle757"></div>
+<div class="legend" id="legend757"></div>
+<div class="table-wrap"><table><thead id="thead757"></thead><tbody id="tbody757"></tbody></table></div>
 <div class="tooltip" id="tooltip"></div>
 
 <!-- 编辑模态框 -->
@@ -435,27 +438,25 @@ function handleDrop(e) {
 }
 
 // ══════════════════════════════════════════════
-// 拉长/缩短（resize）
+// 拉长/缩短（resize）—— 简化版：浮动提示 + 松手re-render
 // ══════════════════════════════════════════════
 let resizeState = null;
 
 function handleResizeStart(e, encodedId) {
-  e.stopPropagation();
-  e.preventDefault();
+  e.stopPropagation(); e.preventDefault();
   const block = e.target.closest('.task-block');
   const td = block.closest('td');
   const taskId = decodeURIComponent(encodedId);
   const colspan = parseInt(block.dataset.colspan) || 1;
   const day = parseInt(td.dataset.day);
   const slot = parseInt(td.dataset.slot);
-  const loSlot = parseInt(td.dataset.loSlot);
-
-  resizeState = {
-    taskId, colspan, day, slot, loSlot,
-    startX: e.clientX, block, td,
-    row: td.closest('tr')
-  };
-  block.classList.add('resizing');
+  resizeState = { taskId, colspan, day, slot, startX: e.clientX, block };
+  // 显示浮动时长指示器
+  const tip = document.createElement('div');
+  tip.id = 'resizeTip';
+  tip.style.cssText = 'position:fixed;z-index:500;background:#111827;color:#38bdf8;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;border:1px solid #38bdf8;pointer-events:none';
+  tip.textContent = (colspan * 0.25).toFixed(1) + 'h';
+  document.body.appendChild(tip);
   document.addEventListener('mousemove', handleResizeMove);
   document.addEventListener('mouseup', handleResizeEnd);
 }
@@ -463,82 +464,90 @@ function handleResizeStart(e, encodedId) {
 function handleResizeMove(e) {
   if (!resizeState) return;
   const rs = resizeState;
-  const cells = rs.row.querySelectorAll('td');
-  const baseIdx = (rs.block.closest('td').dataset.slot !== undefined)
-    ? parseInt(rs.block.closest('td').dataset.slot)
-    : rs.slot;
-
-  const firstTimeCell = cells[1];
-  if (!firstTimeCell) return;
-  const cellWidth = firstTimeCell.offsetWidth || 30;
-  const rect = firstTimeCell.getBoundingClientRect();
-  const deltaSlots = Math.round((e.clientX - rect.right + cellWidth/2) / cellWidth) - baseIdx;
+  const cellW = rs.block.parentElement.offsetWidth / (rs.colspan || 1);
+  const deltaPx = e.clientX - rs.startX;
+  const deltaSlots = Math.round(deltaPx / cellW);
   const newColspan = Math.max(1, rs.colspan + deltaSlots);
-
-  if (baseIdx + newColspan > cells.length - 1) return;
-
-  // 只用 CSS 宽度预览，不改 colspan（避免 table reflow 影响相邻格）
-  rs.block.style.width = (newColspan * cellWidth) + 'px';
-  rs.block.dataset.colspan = newColspan;
-
-  const newDuration = (newColspan * 0.25).toFixed(1);
-  const timeEl = rs.block.querySelector('.time');
-  if (timeEl) {
-    const parts = timeEl.textContent.split(' (');
-    if (parts.length >= 2) timeEl.textContent = parts[0] + ' (' + newDuration + 'h)';
-  }
+  const dur = (newColspan * 0.25).toFixed(1);
+  const tip = document.getElementById('resizeTip');
+  if (tip) { tip.textContent = dur + 'h'; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 30) + 'px'; }
 }
 
 function handleResizeEnd(e) {
   document.removeEventListener('mousemove', handleResizeMove);
   document.removeEventListener('mouseup', handleResizeEnd);
+  const tip = document.getElementById('resizeTip'); if (tip) tip.remove();
   if (!resizeState) return;
   const rs = resizeState;
+  resizeState = null;
 
-  const newColspan = parseInt(rs.block.dataset.colspan) || rs.colspan;
+  const cellW = rs.block.parentElement.offsetWidth / (rs.colspan || 1);
+  const deltaSlots = Math.round((e.clientX - rs.startX) / cellW);
+  const newColspan = Math.max(1, rs.colspan + deltaSlots);
   const newDuration = parseFloat((newColspan * 0.25).toFixed(1));
-  const taskId = rs.taskId;
 
-  // 查找任务
   const effective = getEffectiveTasks();
-  const task = effective.find(t => t._id === taskId);
-  if (!task) { resizeState = null; render(); return; }
+  const task = effective.find(t => t._id === rs.taskId);
+  if (!task || newDuration === parseFloat(task.时长h)) { render(); return; }
 
   const updated = { ...task };
   updated.时长h = newDuration;
-  // 重新计算结束时间
   const startMin = tm(task.起);
   const endMin = startMin + newDuration * 60;
   const eh = Math.floor(endMin / 60), em = endMin % 60;
-  const dateStr = task.日期;
-  updated.止 = `${dateStr} ${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
+  updated.止 = `${task.日期} ${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
 
   const ch = loadChanges();
-  const isNew = ch.added.some(t => t._id === taskId);
-  if (isNew) {
-    ch.added = ch.added.map(t => t._id === taskId ? updated : t);
-  } else {
-    if (ch.deleted && ch.deleted.includes(taskId)) {
-      ch.deleted = ch.deleted.filter(d => d !== taskId);
-    }
-    ch.modified[taskId] = updated;
-  }
+  const isNew = ch.added.some(t => t._id === rs.taskId);
+  if (isNew) ch.added = ch.added.map(t => t._id === rs.taskId ? updated : t);
+  else { if (ch.deleted) ch.deleted = ch.deleted.filter(d => d !== rs.taskId); ch.modified[rs.taskId] = updated; }
   saveChanges(ch);
-  resizeState = null;
   render();
-  toast(`时长已更新为 ${newDuration}h`, 'success');
 }
 
 // ══════════════════════════════════════════════
 // 渲染
 // ══════════════════════════════════════════════
-function render() {
-  try {
-  const filter = document.getElementById('craftFilter').value;
-  let tasks = getEffectiveTasks();
-  if (filter !== 'all') tasks = tasks.filter(t => t.机位 === filter);
+const POSITIONS = [
+  { id: 'B737NG-1', label: 'B737NG-1', tagBg: '#6366F1', tagColor: '#fff', secId: 'secTitle737', legendId: 'legend737', theadId: 'thead737', tbodyId: 'tbody737' },
+  { id: 'B757/767', label: 'B757/767', tagBg: '#F59E0B', tagColor: '#000', secId: 'secTitle757', legendId: 'legend757', theadId: 'thead757', tbodyId: 'tbody757' }
+];
 
+function buildTaskBlockHTML(g, day, idx, loSlot, stackN, stackI) {
+  const statusClass = g._status === 'added' ? ' added' : g._status === 'modified' ? ' changed' : '';
+  const encodedId = encodeURIComponent(g._id||'');
+  const hPct = stackN > 1 ? (100/stackN).toFixed(1) + '%' : '100%';
+  return `<div class="task-block${statusClass}" style="background:${g.color.bg};color:${g.color.text};height:${hPct};min-height:0;flex-shrink:0"
+    draggable="true"
+    data-task-id="${encodedId}"
+    data-colspan="${g.colspan}"
+    data-duration="${g.duration}"
+    ondragstart="handleDragStart(event)"
+    ondragend="handleDragEnd(event)"
+    onclick="openEditModal('${encodedId}')"
+    onmouseenter="showTip(event, '${esc(g.course)}','${esc(g.stStr)}','${esc(g.etStr)}','${esc(g.duration)}','${esc(g.students)}','${esc(g.trainer)}','${esc(g.inspector)}')"
+    onmouseleave="hideTip()">
+    <span class="drag-handle">⋮⋮</span>
+    <span class="edit-icon">✎</span>
+    <span class="client">${esc(g.client.replace('航空',''))}</span>
+    <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
+    <span class="resize-handle" onmousedown="handleResizeStart(event,'${encodedId}')" onclick="event.stopPropagation()">║</span>
+  </div>`;
+}
+
+function renderGanttTable(tasks, cfg) {
+  const { secId, legendId, theadId, tbodyId, label, tagBg, tagColor } = cfg;
+  if (tasks.length === 0) {
+    document.getElementById(secId).innerHTML = `<span class="pos-tag" style="background:${tagBg};color:${tagColor}">${label}</span> <span style="color:var(--muted);font-size:14px">暂无任务</span>`;
+    document.getElementById(legendId).innerHTML = '';
+    document.getElementById(theadId).innerHTML = '';
+    document.getElementById(tbodyId).innerHTML = '';
+    return;
+  }
+
+  // 计算时间范围
   let loMin = 24*60, hiMin = 0;
+  const WDAYS = ['日','一','二','三','四','五','六'];
   tasks.forEach(t => {
     const s = tm(t.起), e = tm(t.止);
     if (s>0) loMin = Math.min(loMin, s);
@@ -547,13 +556,12 @@ function render() {
   if (loMin >= hiMin) { loMin = 7*60; hiMin = 22*60; }
   const loSlot = Math.max(0, Math.floor(loMin/15) - 4);
   const hiSlot = Math.ceil(hiMin/15) + 4;
+  function slotLabel(slot) { const h=Math.floor(slot/4), m=(slot%4)*15; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; }
 
-  function slotH(slot) { return Math.floor(slot/4); }
-  function slotLabel(slot) { const m=(slot%4)*15; return `${slotH(slot).toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; }
-
+  // 构建网格
   const grid = {}; const stackByDay = {};
   tasks.forEach(t => {
-    if (!t.日期 || t.日期==='nan') return;
+    if (!t.日期) return;
     const day = parseInt(t.日期.substring(8,10));
     const sm = tm(t.起), em = tm(t.止);
     const startSlot = Math.max(0, Math.floor(sm/15));
@@ -562,51 +570,33 @@ function render() {
     const color = COLORS[client] || COLORS['default'] || {bg:'#6b7280',hover:'#4b5563',text:'#fff'};
     if (!grid[day]) grid[day] = {};
     if (!stackByDay[day]) stackByDay[day] = {};
-
     for (let si = startSlot; si < endSlot; si++) {
       if (si < loSlot || si >= hiSlot) continue;
       const idx = si - loSlot;
       if (!grid[day][idx]) grid[day][idx] = [];
-      // 避免重复添加
       if (!grid[day][idx].some(e => e._id === t._id)) {
-        grid[day][idx].push({
-          client, course: db(t.课目类型),
-          stStr: (t.起||'').split(' ').pop()||'',
-          etStr: (t.止||'').split(' ').pop()||'',
-          duration: db(t.时长h),
-          students: db(t.学员), trainer: db(t.教员), inspector: db(t.检查员),
-          color, colspan: 1, isStart: false,
-          _id: t._id, _status: t._status
-        });
+        grid[day][idx].push({ client, course: db(t.课目类型), stStr: (t.起||'').split(' ').pop()||'', etStr: (t.止||'').split(' ').pop()||'', duration: db(t.时长h), students: db(t.学员), trainer: db(t.教员), inspector: db(t.检查员), color, colspan: 1, isStart: false, _id: t._id, _status: t._status });
       }
       stackByDay[day][idx] = (stackByDay[day][idx]||0) + 1;
     }
     const firstIdx = startSlot - loSlot;
     const arr = grid[day] && grid[day][firstIdx];
-    if (arr) {
-      const mine = arr.find(e => e._id === t._id);
-      if (mine) {
-        mine.isStart = true;
-        mine.colspan = Math.min(endSlot, hiSlot) - Math.max(startSlot, loSlot);
-      }
-    }
+    if (arr) { const mine = arr.find(e => e._id === t._id); if (mine) { mine.isStart = true; mine.colspan = Math.min(endSlot, hiSlot) - Math.max(startSlot, loSlot); } }
   });
 
   const usedDays = Object.keys(grid).map(Number).sort((a,b)=>a-b);
-  const WDAYS = ['日','一','二','三','四','五','六'];
-
   const clients = [...new Set(tasks.map(t=>db(t.客户航司)).filter(Boolean))];
-  document.getElementById('legend').innerHTML = clients.map(c => {
-    const co = COLORS[c]||COLORS['default']||{bg:'#6b7280'};
-    return `<div class="legend-item"><span class="legend-dot" style="background:${co.bg}"></span>${c}</div>`;
-  }).join('');
-  document.getElementById('stats').innerHTML = `<strong>${tasks.length}</strong>场 · <strong>${clients.length}</strong>家航司`;
 
-  let thead = '<tr><th class="corner date-col">日期<br>航司</th>';
+  // 标题
+  document.getElementById(secId).innerHTML = `<span class="pos-tag" style="background:${tagBg};color:${tagColor}">${label}</span> · <strong style="color:var(--text)">${tasks.length}</strong>场 · <strong style="color:var(--text)">${clients.length}</strong>家航司`;
+  // 图例
+  document.getElementById(legendId).innerHTML = clients.map(c => { const co = COLORS[c]||COLORS['default']||{bg:'#6b7280'}; return `<div class="legend-item"><span class="legend-dot" style="background:${co.bg}"></span>${c}</div>`; }).join('');
+  // 表头
+  let thead = '<tr><th class="corner date-col">日期</th>';
   for (let si=loSlot; si<hiSlot; si++) thead += `<th>${slotLabel(si)}</th>`;
   thead += '</tr>';
-  document.getElementById('ganttHead').innerHTML = thead;
-
+  document.getElementById(theadId).innerHTML = thead;
+  // 表体
   let tbody = '';
   usedDays.forEach(day => {
     const ds = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
@@ -614,37 +604,14 @@ function render() {
     const maxStack = Math.max(...Object.values(stackByDay[day]||{}), 1);
     const rowH = Math.max(58, maxStack * 44);
     tbody += `<tr style="height:${rowH}px"><td style="height:${rowH}px">${day}<span class="dow"> 周${wd}</span></td>`;
-
     let si = loSlot;
     while (si < hiSlot) {
       const idx = si - loSlot;
       const arr = grid[day] && grid[day][idx];
       const startTasks = arr ? arr.filter(g => g.isStart) : [];
-
       if (startTasks.length > 0) {
         const maxColspan = Math.max(...startTasks.map(g => g.colspan));
-        const n = startTasks.length;
-        const blocksHTML = startTasks.map((g, i) => {
-          const statusClass = g._status === 'added' ? ' added' : g._status === 'modified' ? ' changed' : '';
-          const encodedId = encodeURIComponent(g._id||'');
-          const hPct = n > 1 ? (100/n).toFixed(1) + '%' : '100%';
-          return `<div class="task-block${statusClass}" style="background:${g.color.bg};color:${g.color.text};height:${hPct};min-height:0;flex-shrink:0"
-            draggable="true"
-            data-task-id="${encodedId}"
-            data-colspan="${g.colspan}"
-            data-duration="${g.duration}"
-            ondragstart="handleDragStart(event)"
-            ondragend="handleDragEnd(event)"
-            onclick="openEditModal('${encodedId}')"
-            onmouseenter="showTip(event, '${esc(g.course)}','${esc(g.stStr)}','${esc(g.etStr)}','${esc(g.duration)}','${esc(g.students)}','${esc(g.trainer)}','${esc(g.inspector)}')"
-            onmouseleave="hideTip()">
-            <span class="drag-handle">⋮⋮</span>
-            <span class="edit-icon">✎</span>
-            <span class="client">${esc(g.client.replace('航空',''))}</span>
-            <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
-            <span class="resize-handle" onmousedown="handleResizeStart(event,'${encodedId}')" onclick="event.stopPropagation()">║</span>
-          </div>`;
-        }).join('');
+        const blocksHTML = startTasks.map((g, i) => buildTaskBlockHTML(g, day, idx, loSlot, startTasks.length, i)).join('');
         tbody += `<td colspan="${maxColspan}" data-day="${day}" data-slot="${idx}" data-lo-slot="${loSlot}" style="vertical-align:top;padding:0">${blocksHTML}</td>`;
         si += maxColspan;
       } else {
@@ -654,16 +621,24 @@ function render() {
     }
     tbody += '</tr>';
   });
-  document.getElementById('ganttBody').innerHTML = tbody;
+  document.getElementById(tbodyId).innerHTML = tbody;
+}
 
+function render() {
+  try {
+  const allTasks = getEffectiveTasks();
+  let total = 0, totalClients = new Set();
+  POSITIONS.forEach(pos => {
+    const tasks = allTasks.filter(t => t.机位 === pos.id);
+    tasks.forEach(t => { if (t.客户航司) totalClients.add(t.客户航司); });
+    total += tasks.length;
+    renderGanttTable(tasks, pos);
+  });
+  document.getElementById('stats').innerHTML = `<strong>${total}</strong>场 · <strong>${totalClients.size}</strong>家航司`;
   updateBadge();
-  document.getElementById('updateTime').textContent =
-    `最后更新: ${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'})} CST`;
+  document.getElementById('updateTime').textContent = `最后更新: ${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'})} CST`;
   } catch(e) {
-    document.getElementById('ganttBody').innerHTML =
-      `<tr><td colspan="100" style="padding:40px;color:#ef4444;font-size:14px;text-align:center">
-        渲染错误: ${e.message}<br><span style="font-size:11px;color:#94a3b8">
-        请尝试「撤销变更」清除本地缓存后刷新页面</span></td></tr>`;
+    document.getElementById('tbody737').innerHTML = `<tr><td colspan="100" style="padding:40px;color:#ef4444;font-size:14px;text-align:center">渲染错误: ${e.message}<br><span style="font-size:11px;color:#94a3b8">请尝试「撤销变更」清除本地缓存后刷新页面</span></td></tr>`;
     document.getElementById('stats').innerHTML = '<strong style="color:#ef4444">渲染失败</strong>';
     console.error('Board render error:', e);
   }
