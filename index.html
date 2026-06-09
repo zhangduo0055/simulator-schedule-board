@@ -3,562 +3,274 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>河南航投航空培训中心 · 模拟机排程展板（可编辑）</title>
+<title>河南航投航空培训中心 · 模拟机排程展板</title>
 <style>
 :root {
-  --bg: #0f172a; --card: #1e293b; --border: #334155;
-  --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
-  --row-h: 50px; --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+  --bg: #0f172a;
+  --card: #1e293b;
+  --border: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --row-h: 58px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
-  background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 28px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 28px;
 }
-/* ── 顶部 ── */
-.top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
-.top-bar h1 { font-size:24px; font-weight:800; letter-spacing:0.5px; }
-.top-bar h1 span { color:var(--accent); font-weight:600; font-size:18px; }
-.top-bar .update-time { color:var(--muted); font-size:12px; }
-.right-ctrls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.right-ctrls select, .ctrl-btn {
-  padding:10px 16px; border-radius:10px; border:1px solid var(--border);
-  background:var(--card); color:var(--text); font-size:14px; cursor:pointer;
-  font-family:inherit; outline:none; transition:border .2s, background .2s;
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
 }
-.right-ctrls select:focus { border-color:var(--accent); }
-.ctrl-btn:hover { background:#334155; border-color:var(--accent); }
-.ctrl-btn.primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
-.ctrl-btn.primary:hover { background:#7dd3fc; }
-.ctrl-btn.danger { border-color:var(--red); color:var(--red); }
-.ctrl-btn.danger:hover { background:#7f1d1d; }
-.ctrl-btn.export { border-color:var(--green); color:var(--green); }
-.ctrl-btn.export:hover { background:#14532d; }
-.change-badge {
-  display:inline-flex; align-items:center; justify-content:center;
-  width:22px; height:22px; border-radius:50%; background:var(--yellow);
-  color:#000; font-size:11px; font-weight:800; margin-left:-4px; display:none;
+.top-bar h1 {
+  font-size: 24px; font-weight: 800; letter-spacing: 0.5px;
 }
-.stat-badge { display:flex; gap:16px; font-size:14px; color:var(--muted); }
-.stat-badge strong { color:var(--text); }
+.top-bar h1 span { color: var(--accent); font-weight: 600; font-size: 18px; }
+.top-bar .update-time { color: var(--muted); font-size: 12px; }
+.right-ctrls { display: flex; gap: 12px; align-items: center; }
+.right-ctrls select {
+  padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 15px; cursor: pointer;
+  font-family: inherit; outline: none; transition: border .2s;
+}
+.right-ctrls select:focus { border-color: var(--accent); }
+.stat-badge {
+  display: flex; gap: 16px; font-size: 14px; color: var(--muted);
+}
+.stat-badge strong { color: var(--text); }
 
-/* ── 图例 ── */
-.legend { display:flex; gap:18px; flex-wrap:wrap; margin-bottom:14px; padding:10px 18px; background:var(--card); border-radius:10px; border:1px solid var(--border); font-size:14px; }
-.legend-item { display:flex; align-items:center; gap:8px; }
-.legend-dot { width:16px; height:16px; border-radius:4px; flex-shrink:0; }
+.legend {
+  display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px;
+  padding: 10px 18px; background: var(--card); border-radius: 10px;
+  border: 1px solid var(--border); font-size: 14px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 
-/* ── 表格 ── */
-.table-wrap { overflow:auto; max-height:78vh; background:var(--card); border-radius:14px; border:1px solid var(--border); box-shadow:0 4px 24px rgba(0,0,0,.3); }
-table { border-collapse:collapse; min-width:100%; table-layout:fixed; }
-th, td { border:1px solid var(--border); text-align:center; vertical-align:middle; }
-th.date-col, td:first-child { width:70px; min-width:70px; max-width:70px; overflow:hidden; }
-td.empty { width:40px; min-width:40px; max-width:40px; }
-th.time-col { width:40px; min-width:40px; max-width:40px; }
-th, td { border:1px solid var(--border); text-align:center; vertical-align:middle; }
-th { background:#111827; color:var(--muted); font-weight:600; font-size:12px; position:sticky; top:0; z-index:3; padding:6px 1px; white-space:nowrap; }
-th.date-col { position:sticky; left:0; z-index:5; background:#111827; width:70px; max-width:70px; font-size:13px; color:var(--text); }
-th.corner { z-index:6; }
-td { padding:0; transition:background .15s; font-size:11px; }
-td:first-child { background:#111827; font-weight:700; color:var(--text); font-size:13px; position:sticky; left:0; z-index:2; padding:4px 2px; width:70px; max-width:70px; }
-td:first-child .dow { font-size:11px; color:var(--muted); font-weight:400; }
-td.empty { background:#0f1a2e; }
-td.empty:nth-child(even) { background:#111d33; }
+.table-wrap {
+  overflow: auto; max-height: 82vh;
+  background: var(--card); border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,.3);
+}
+
+table { border-collapse: collapse; min-width: 100%; table-layout: fixed; }
+th, td { border: 1px solid var(--border); text-align: center; vertical-align: middle; }
+
+th {
+  background: #111827; color: var(--muted); font-weight: 600;
+  font-size: 12px; position: sticky; top: 0; z-index: 3; padding: 6px 1px;
+  white-space: nowrap;
+}
+th.date-col {
+  position: sticky; left: 0; z-index: 5;
+  background: #111827; min-width: 70px; font-size: 14px; color: var(--text);
+}
+th.corner { z-index: 6; }
+
+td {
+  padding: 0; transition: background .15s;
+  font-size: 11px;
+}
+td:first-child {
+  background: #111827; font-weight: 700; color: var(--text); font-size: 14px;
+  position: sticky; left: 0; z-index: 2;
+  padding: 4px; min-width: 70px;
+}
+td:first-child .dow { font-size: 11px; color: var(--muted); font-weight: 400; }
+td.empty { background: #0f1a2e; }
+td.empty:nth-child(even) { background: #111d33; }
 
 .task-block {
-  width:100%; height:100%; padding:2px;
-  display:flex; flex-direction:column; align-items:center;
-  justify-content:center; border-radius:3px;
-  cursor:pointer; transition:all .15s; min-height:var(--row-h);
-  position:relative; overflow:hidden;
-  font-weight:600; letter-spacing:0.3px;
+  width: 100%; height: 100%; padding: 4px 2px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; border-radius: 3px;
+  cursor: pointer; transition: all .15s; min-height: var(--row-h);
+  position: relative; overflow: hidden;
+  font-weight: 600; letter-spacing: 0.3px;
 }
-.task-block:hover { filter:brightness(1.12); transform:scale(1.03); z-index:10; box-shadow:0 4px 18px rgba(0,0,0,.5); }
-.task-block .client { font-size:12px; line-height:1.2; }
-.task-block .time { font-size:10px; opacity:.85; margin-top:1px; }
-.task-block .course { font-size:9px; opacity:.7; margin-top:1px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.task-block:hover {
+  filter: brightness(1.12);
+  transform: scale(1.03);
+  z-index: 10;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+}
+.task-block .client { font-size: 12px; line-height: 1.2; }
+.task-block .time { font-size: 10px; opacity: .85; margin-top: 1px; }
+.task-block .course { font-size: 9px; opacity: .7; margin-top: 1px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 变更标记 */
-.task-block.changed { border-left:4px solid var(--yellow); }
-.task-block.added   { border-left:4px solid var(--green); }
-.task-block .edit-icon {
-  position:absolute; top:2px; right:2px; font-size:10px; opacity:0; transition:opacity .15s;
-}
-.task-block:hover .edit-icon { opacity:0.85; }
-
-/* ── 模态框 ── */
-.modal-overlay {
-  display:none; position:fixed; inset:0; z-index:200;
-  background:rgba(0,0,0,.65); justify-content:center; align-items:center;
-}
-.modal-overlay.active { display:flex; }
-.modal-box {
-  background:var(--card); border:1px solid var(--border); border-radius:16px;
-  padding:28px 32px; width:520px; max-height:90vh; overflow-y:auto;
-  box-shadow:0 12px 48px rgba(0,0,0,.6); animation:fadeIn .2s;
-}
-@keyframes fadeIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
-.modal-box h2 { font-size:20px; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
-.modal-box h2 .tag { font-size:12px; padding:2px 8px; border-radius:6px; }
-.modal-box h2 .tag.new { background:var(--green); color:#000; }
-.modal-box h2 .tag.edit { background:var(--yellow); color:#000; }
-.modal-box h2 .tag.delete { background:var(--red); color:#fff; }
-
-.form-row { display:flex; gap:12px; margin-bottom:14px; }
-.form-row label { display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); flex:1; }
-.form-row label input, .form-row label select {
-  padding:10px 12px; border-radius:8px; border:1px solid var(--border);
-  background:#0f172a; color:var(--text); font-size:14px; font-family:inherit; outline:none;
-  transition:border .2s;
-}
-.form-row label input:focus, .form-row label select:focus { border-color:var(--accent); }
-.form-row label input[type="date"]::-webkit-calendar-picker-indicator,
-.form-row label input[type="time"]::-webkit-calendar-picker-indicator { filter:invert(1); }
-
-.form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
-.form-actions button {
-  padding:10px 20px; border-radius:8px; border:1px solid var(--border);
-  font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;
-  transition:all .15s;
-}
-.btn-save { background:var(--accent); color:#000; border-color:var(--accent); }
-.btn-save:hover { background:#7dd3fc; }
-.btn-cancel { background:transparent; color:var(--muted); }
-.btn-cancel:hover { background:#1e293b; color:var(--text); }
-.btn-delete { background:transparent; color:var(--red); border-color:var(--red); margin-right:auto; }
-.btn-delete:hover { background:#7f1d1d; color:#fff; }
-
-/* ── Toast ── */
-.toast {
-  position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-  padding:12px 28px; border-radius:10px; font-size:14px; font-weight:600;
-  z-index:300; opacity:0; transition:opacity .3s; pointer-events:none;
-}
-.toast.show { opacity:1; }
-.toast.success { background:#14532d; color:var(--green); border:1px solid var(--green); }
-.toast.error { background:#7f1d1d; color:var(--red); border:1px solid var(--red); }
-
-/* ── 提示框 ── */
 .tooltip {
-  display:none; position:fixed; z-index:100;
-  background:var(--card); color:var(--text);
-  border:1px solid var(--border); border-radius:12px;
-  padding:14px 18px; font-size:14px; max-width:320px;
-  box-shadow:0 8px 32px rgba(0,0,0,.7);
-  pointer-events:none; line-height:1.8;
+  display: none; position: fixed; z-index: 100;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; font-size: 14px; max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
+  pointer-events: none; line-height: 1.8;
 }
-.tooltip.show { display:block; }
-.tooltip b { font-size:15px; }
-.tooltip .dim { color:var(--muted); }
+.tooltip.show { display: block; }
+.tooltip b { font-size: 15px; }
+.tooltip .dim { color: var(--muted); }
 
 .table-wrap::-webkit-scrollbar { width:8px; height:8px; }
-.table-wrap::-webkit-scrollbar-track { background:#0f172a; }
-.table-wrap::-webkit-scrollbar-thumb { background:#475569; border-radius:4px; }
-
-/* ── 拖拽相关 ── */
-.drag-handle { font-size:11px; color:rgba(255,255,255,.4); cursor:grab; line-height:1; user-select:none; }
-.resize-handle { font-size:14px; color:rgba(255,255,255,.3); cursor:ew-resize; line-height:1; user-select:none; position:absolute; right:4px; top:50%; transform:translateY(-50%); padding:2px 4px; }
-.resize-handle:hover { color:rgba(255,255,255,.8); background:rgba(255,255,255,.1); border-radius:3px; }
-.task-block[draggable="true"] { cursor:grab; }
-.task-block.dragging { opacity:.3; }
-.task-block.resizing { opacity:.6; }
-td.drop-target { background: rgba(56,189,248,.15) !important; outline:2px dashed var(--accent); outline-offset:-2px; }
-td.drop-invalid { background: rgba(239,68,68,.1) !important; }
-
-/* ── 导出面板 ── */
-.export-panel {
-  display:none; position:fixed; bottom:0; left:0; right:0; z-index:250;
-  background:#111827; border-top:1px solid var(--border);
-  padding:16px 28px; max-height:35vh; overflow-y:auto;
-}
-.export-panel.active { display:block; }
-.export-panel h3 { font-size:16px; margin-bottom:10px; display:flex; justify-content:space-between; }
-.export-panel pre {
-  background:#0f172a; padding:14px; border-radius:8px; font-size:13px;
-  overflow-x:auto; white-space:pre-wrap; font-family:'Consolas','Courier New',monospace;
-  color:var(--green); max-height:22vh; overflow-y:auto;
-}
-.export-panel .export-actions { display:flex; gap:8px; margin-top:10px; }
-.export-panel button { padding:8px 16px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
+.table-wrap::-webkit-scrollbar-track { background: #0f172a; }
+.table-wrap::-webkit-scrollbar-thumb { background: #475569; border-radius:4px; }
 </style>
 </head>
 <body>
-
 <div class="top-bar">
   <div>
     <h1>河南航投航空培训中心 <span>模拟机排程展板 · 2026年6月</span></h1>
-    <span class="update-time" id="updateTime"></span>
+    <span class="update-time">最后更新: 2026-06-09 15:11 CST</span>
   </div>
   <div class="right-ctrls">
-    <button class="ctrl-btn primary" onclick="openAddModal()">＋ 新增任务</button>
     <select id="craftFilter" onchange="render()">
+      <option value="all">📋 全部机型</option>
       <option value="B737NG-1">🛩 B737NG-1</option>
       <option value="B757/767">🛫 B757/767</option>
     </select>
     <div class="stat-badge" id="stats"></div>
-    <button class="ctrl-btn export" onclick="toggleExportPanel()">📤 导出变更</button>
-    <button class="ctrl-btn danger" onclick="clearAllChanges()">↺ 撤销变更</button>
-    <span class="change-badge" id="changeBadge">0</span>
   </div>
 </div>
 <div class="legend" id="legend"></div>
-<div class="table-wrap"><table><thead id="ganttHead"></thead><tbody id="ganttBody"></tbody></table></div>
+<div class="table-wrap"><table id="ganttTable"><thead id="ganttHead"></thead><tbody id="ganttBody"></tbody></table></div>
 <div class="tooltip" id="tooltip"></div>
 
-<!-- 编辑模态框 -->
-<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
-  <div class="modal-box" id="modalBox"></div>
-</div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
-<!-- 导出面板 -->
-<div class="export-panel" id="exportPanel">
-  <h3>
-    📤 变更数据导出
-    <span style="font-size:12px;color:var(--muted)">复制此 JSON 发给管理员执行同步</span>
-  </h3>
-  <pre id="exportContent"></pre>
-  <div class="export-actions">
-    <button class="ctrl-btn" onclick="copyExport()">📋 复制到剪贴板</button>
-    <button class="ctrl-btn" onclick="downloadExport()">💾 下载 JSON 文件</button>
-    <button class="ctrl-btn" style="color:var(--muted)" onclick="toggleExportPanel()">关闭</button>
-  </div>
-</div>
-
 <script>
-// ══════════════════════════════════════════════
-// 原始数据（从智能表格生成的只读快照）
-// ══════════════════════════════════════════════
-const ALL = [{"日期": "2026-06-16", "起": "2026-06-16 10:00", "止": "2026-06-16 12:00", "课目类型": "机务 FBS", "学员": null, "教员": null, "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-16", "起": "2026-06-16 13:00", "止": "2026-06-16 15:00", "课目类型": "机务 FBS", "学员": null, "教员": null, "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-16", "起": "2026-06-16 15:00", "止": "2026-06-16 17:00", "课目类型": "机务 FBS", "学员": null, "教员": null, "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-17", "起": "2026-06-17 10:00", "止": "2026-06-17 12:00", "课目类型": "机务 FBS", "学员": null, "教员": null, "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-17", "起": "2026-06-17 13:00", "止": "2026-06-17 15:00", "课目类型": "机务 FBS", "学员": null, "教员": null, "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-17", "起": "2026-06-17 15:00", "止": "2026-06-17 17:00", "课目类型": "机务 FBS", "学员": null, "教员": null, "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-19", "起": "2026-06-19 09:00", "止": "2026-06-19 11:00", "课目类型": "转机型训练 FBS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-19", "起": "2026-06-19 11:15", "止": "2026-06-19 13:15", "课目类型": "转机型训练 FBS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 09:00", "止": "2026-06-20 11:00", "课目类型": "转机型训练 FBS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 11:15", "止": "2026-06-20 13:15", "课目类型": "转机型训练 FBS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 13:15", "止": "2026-06-20 15:15", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 15:30", "止": "2026-06-20 17:30", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 17:45", "止": "2026-06-20 19:45", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 09:00", "止": "2026-06-21 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 11:15", "止": "2026-06-21 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 13:15", "止": "2026-06-21 15:15", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 15:30", "止": "2026-06-21 17:30", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 17:45", "止": "2026-06-21 19:45", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 09:00", "止": "2026-06-22 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 11:15", "止": "2026-06-22 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 13:15", "止": "2026-06-22 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 15:30", "止": "2026-06-22 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 17:45", "止": "2026-06-22 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 09:00", "止": "2026-06-23 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 11:15", "止": "2026-06-23 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 13:15", "止": "2026-06-23 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 15:30", "止": "2026-06-23 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 17:45", "止": "2026-06-23 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-24", "起": "2026-06-24 09:00", "止": "2026-06-24 11:00", "课目类型": "转机型训练 FFS", "学员": "臧曰镇 蒋海军 贾运峰", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-24", "起": "2026-06-24 11:15", "止": "2026-06-24 14:15", "课目类型": "转机型训练 FFS", "学员": "臧曰镇 蒋海军 贾运峰", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 3}, {"日期": "2026-06-24", "起": "2026-06-24 09:00", "止": "2026-06-24 13:00", "课目类型": "90天3起落", "学员": "臧曰镇 蒋海军 贾运峰 刘金强", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-24", "起": "2026-06-24 14:30", "止": "2026-06-24 16:30", "课目类型": "90天3起落", "学员": "臧曰镇 蒋海军 贾运峰 刘金强", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-24", "起": "2026-06-24 16:45", "止": "2026-06-24 18:45", "课目类型": "90天3起落", "学员": "臧曰镇 蒋海军 贾运峰 刘金强", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-24", "起": "2026-06-24 19:00", "止": "2026-06-24 23:00", "课目类型": "90天3起落", "学员": "臧曰镇 蒋海军 贾运峰 刘金强", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-25", "起": "2026-06-25 09:00", "止": "2026-06-25 11:00", "课目类型": "90天3起落", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 11:15", "止": "2026-06-25 13:15", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 13:30", "止": "2026-06-25 15:30", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 15:45", "止": "2026-06-25 18:45", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 3}, {"日期": "2026-06-25", "起": "2026-06-25 19:00", "止": "2026-06-25 21:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 09:00", "止": "2026-06-26 11:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 11:15", "止": "2026-06-26 13:15", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 13:30", "止": "2026-06-26 15:30", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 15:45", "止": "2026-06-26 17:45", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 18:00", "止": "2026-06-26 20:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 20:15", "止": "2026-06-26 22:15", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 09:00", "止": "2026-06-27 11:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 11:15", "止": "2026-06-27 14:15", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 3}, {"日期": "2026-06-27", "起": "2026-06-27 14:30", "止": "2026-06-27 16:30", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 16:45", "止": "2026-06-27 18:45", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 19:00", "止": "2026-06-27 21:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 09:00", "止": "2026-06-28 11:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 11:15", "止": "2026-06-28 13:15", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 13:30", "止": "2026-06-28 15:30", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 15:45", "止": "2026-06-28 18:45", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 3}, {"日期": "2026-06-29", "起": "2026-06-29 09:00", "止": "2026-06-29 11:00", "课目类型": "下半年复训科目验证", "学员": null, "教员": null, "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-29", "起": "2026-06-29 11:15", "止": "2026-06-29 13:15", "课目类型": "下半年复训科目验证", "学员": null, "教员": null, "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-29", "起": "2026-06-29 13:30", "止": "2026-06-29 15:30", "课目类型": "下半年复训科目验证", "学员": null, "教员": null, "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 09:00", "止": "2026-06-30 11:00", "课目类型": "下半年复训科目验证", "学员": null, "教员": null, "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 11:15", "止": "2026-06-30 13:15", "课目类型": "下半年复训科目验证", "学员": null, "教员": null, "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 13:30", "止": "2026-06-30 15:30", "课目类型": "下半年复训科目验证", "学员": null, "教员": null, "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 2}];
-
-// ══════════════════════════════════════════════
-// 配置
-// ══════════════════════════════════════════════
+const ALL = [{"日期": "2026-06-20", "起": "2026-06-20 13:15", "止": "2026-06-20 15:15", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 15:30", "止": "2026-06-20 17:30", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-20", "起": "2026-06-20 17:45", "止": "2026-06-20 19:45", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 09:00", "止": "2026-06-21 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 11:15", "止": "2026-06-21 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 13:15", "止": "2026-06-21 15:15", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 15:30", "止": "2026-06-21 17:30", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-21", "起": "2026-06-21 17:45", "止": "2026-06-21 19:45", "课目类型": "转机型训练 FBS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 09:00", "止": "2026-06-22 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 11:15", "止": "2026-06-22 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "陈震", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 13:15", "止": "2026-06-22 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 15:30", "止": "2026-06-22 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-22", "起": "2026-06-22 17:45", "止": "2026-06-22 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 13:15", "止": "2026-06-23 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 15:30", "止": "2026-06-23 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-23", "起": "2026-06-23 17:45", "止": "2026-06-23 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-24", "起": "2026-06-24 09:00", "止": "2026-06-24 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-24", "起": "2026-06-24 11:15", "止": "2026-06-24 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 09:00", "止": "2026-06-25 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 11:15", "止": "2026-06-25 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 13:15", "止": "2026-06-25 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 15:30", "止": "2026-06-25 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-25", "起": "2026-06-25 17:45", "止": "2026-06-25 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 09:00", "止": "2026-06-26 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 11:15", "止": "2026-06-26 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 13:15", "止": "2026-06-26 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 15:30", "止": "2026-06-26 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-26", "起": "2026-06-26 17:45", "止": "2026-06-26 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 09:00", "止": "2026-06-27 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 11:15", "止": "2026-06-27 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 13:15", "止": "2026-06-27 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 15:30", "止": "2026-06-27 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-27", "起": "2026-06-27 17:45", "止": "2026-06-27 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 13:15", "止": "2026-06-28 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 15:30", "止": "2026-06-28 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-28", "起": "2026-06-28 17:45", "止": "2026-06-28 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-29", "起": "2026-06-29 09:00", "止": "2026-06-29 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-29", "起": "2026-06-29 11:15", "止": "2026-06-29 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 09:00", "止": "2026-06-30 11:00", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 11:15", "止": "2026-06-30 13:15", "课目类型": "转机型训练 FFS", "学员": "陈庆 许珂", "教员": "傅作彪", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 13:15", "止": "2026-06-30 15:15", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 15:30", "止": "2026-06-30 17:30", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-30", "起": "2026-06-30 17:45", "止": "2026-06-30 19:45", "课目类型": "转机型训练 FFS", "学员": "赵琦 郭建伟 梁家菘", "教员": "刘勇亮", "检查员": null, "客户航司": "圆通航空", "机位": "B757/767", "时长h": 2}, {"日期": "2026-06-01", "起": "2026-06-01 09:00", "止": "2026-06-01 11:00", "课目类型": "个人训练", "学员": null, "教员": null, "检查员": null, "客户航司": "个人自费", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-01", "起": "2026-06-01 13:00", "止": "2026-06-01 14:00", "课目类型": "个人训练", "学员": null, "教员": null, "检查员": null, "客户航司": "个人自费", "机位": "B737NG-1", "时长h": 1}, {"日期": "2026-06-01", "起": "2026-06-01 15:00", "止": "2026-06-01 17:00", "课目类型": "个人训练", "学员": null, "教员": null, "检查员": null, "客户航司": "个人自费", "机位": "B737NG-1", "时长h": 2}, {"日期": "2026-06-02", "起": "2026-06-02 10:00", "止": "2026-06-02 11:00", "课目类型": "个人训练", "学员": null, "教员": null, "检查员": null, "客户航司": "个人自费", "机位": "B737NG-1", "时长h": 1}, {"日期": "2026-06-02", "起": "2026-06-02 14:00", "止": "2026-06-02 20:00", "课目类型": "复训", "学员": "张丁 杨泱 朱跃虎", "教员": "聂宇", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-03", "起": "2026-06-03 10:00", "止": "2026-06-03 11:00", "课目类型": "个人训练", "学员": null, "教员": null, "检查员": null, "客户航司": "个人自费", "机位": "B737NG-1", "时长h": 1}, {"日期": "2026-06-03", "起": "2026-06-03 14:00", "止": "2026-06-03 20:00", "课目类型": "复训", "学员": "张丁 杨泱 朱跃虎", "教员": "聂宇", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-04", "起": "2026-06-04 12:00", "止": "2026-06-04 18:00", "课目类型": "复训", "学员": "张丁 杨泱 朱跃虎", "教员": "聂宇 检查员：严春华", "检查员": "严春华", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-04", "起": "2026-06-04 18:00", "止": "2026-06-04 22:00", "课目类型": "补充训练", "学员": "刘森林 黄伟龙", "教员": "胡传杰", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-05", "起": "2026-06-05 12:00", "止": "2026-06-05 16:00", "课目类型": "90天3起落", "学员": "李翔 刘博 张立永 张毅", "教员": null, "检查员": "严春华", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-05", "起": "2026-06-05 18:00", "止": "2026-06-05 22:00", "课目类型": "补充训练", "学员": "刘森林 黄伟龙", "教员": "胡传杰", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-06", "起": "2026-06-06 12:00", "止": "2026-06-06 18:00", "课目类型": "120天100小时检查", "学员": "耿晗 李隆毓 孙德龙", "教员": null, "检查员": "严春华", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-06", "起": "2026-06-06 18:00", "止": "2026-06-06 20:00", "课目类型": "补充训练", "学员": "刘森林 黄伟龙", "教员": "胡传杰", "检查员": "刘昕", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-07", "起": "2026-06-07 12:00", "止": "2026-06-07 16:00", "课目类型": "补充训练", "学员": "杨扬 胡谦", "教员": null, "检查员": "刘昕", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-08", "起": "2026-06-08 12:00", "止": "2026-06-08 18:00", "课目类型": "复训", "学员": "姜永峰 杨瑞光 陈禹纲", "教员": "王金国", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-09", "起": "2026-06-09 12:00", "止": "2026-06-09 18:00", "课目类型": "复训", "学员": "姜永峰 杨瑞光 陈禹纲", "教员": "王金国", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-10", "起": "2026-06-10 12:00", "止": "2026-06-10 18:00", "课目类型": "复训", "学员": "姜永峰 杨瑞光 陈禹纲", "教员": "王金国 检查员：潘冲", "检查员": "潘冲", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-11", "起": "2026-06-11 14:00", "止": "2026-06-11 20:00", "课目类型": "强化训练", "学员": "潘冲 王金国 高云扬", "教员": "路修远", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-12", "起": "2026-06-12 14:00", "止": "2026-06-12 20:00", "课目类型": "强化训练", "学员": "胡传杰 郑汉 岳俊翔", "教员": "路修远", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-13", "起": "2026-06-13 12:00", "止": "2026-06-13 18:00", "课目类型": "复训", "学员": "盛文 刘一丁 李泽凯", "教员": "胡传杰", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-14", "起": "2026-06-14 12:00", "止": "2026-06-14 18:00", "课目类型": "复训", "学员": "盛文 刘一丁 李泽凯", "教员": "胡传杰", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-15", "起": "2026-06-15 17:00", "止": "2026-06-15 23:00", "课目类型": "复训", "学员": "盛文 刘一丁 李泽凯", "教员": "胡传杰 检查员：高原", "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-16", "起": "2026-06-16 16:00", "止": "2026-06-16 22:00", "课目类型": "强化训练", "学员": "高原 韩安藻 严春华", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-17", "起": "2026-06-17 14:00", "止": "2026-06-17 18:00", "课目类型": "90天3起落", "学员": "臧曰镇 蒋海军 贾运峰 刘金强", "教员": null, "检查员": "高原", "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}, {"日期": "2026-06-17", "起": "2026-06-17 18:00", "止": "2026-06-18 00:00", "课目类型": "强化训练", "学员": "聂宇 孙嘉阳 刘昕", "教员": "陈晓兵", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 6}, {"日期": "2026-06-23", "起": "2026-06-23 12:00", "止": "2026-06-23 16:00", "课目类型": "下半年复训科目验证", "学员": "黄恩超 孙建增", "教员": "路修远/盛文", "检查员": null, "客户航司": "龙浩航空", "机位": "B737NG-1", "时长h": 4}];
 const COLORS = {
-  "圆通航空":{"bg":"#F97316","hover":"#EA580C","text":"#fff"},
-  "龙浩航空":{"bg":"#3B82F6","hover":"#2563EB","text":"#fff"},
-  "个人自费":{"bg":"#8B5CF6","hover":"#7C3AED","text":"#fff"},
-  "邮政航空":{"bg":"#06B6D4","hover":"#0891B2","text":"#fff"},
-  "江西航空":{"bg":"#10B981","hover":"#059669","text":"#fff"},
-  "乌鲁木齐航空":{"bg":"#EC4899","hover":"#DB2777","text":"#fff"},
-  "东航":{"bg":"#6366F1","hover":"#4F46E5","text":"#fff"},
-  "南航":{"bg":"#14B8A6","hover":"#0D9488","text":"#fff"},
-  "河北航":{"bg":"#F59E0B","hover":"#D97706","text":"#fff"},
-  "龙浩":{"bg":"#3B82F6","hover":"#2563EB","text":"#fff"},
-  "邮航":{"bg":"#06B6D4","hover":"#0891B2","text":"#fff"},
-  "其他航司":{"bg":"#6B7280","hover":"#4B5563","text":"#fff"},
-  "default":{"bg":"#6B7280","hover":"#4B5563","text":"#fff"}
+  "圆通航空": {
+    "bg": "#F97316",
+    "hover": "#EA580C",
+    "text": "#fff"
+  },
+  "龙浩航空": {
+    "bg": "#3B82F6",
+    "hover": "#2563EB",
+    "text": "#fff"
+  },
+  "个人自费": {
+    "bg": "#8B5CF6",
+    "hover": "#7C3AED",
+    "text": "#fff"
+  },
+  "邮政航空": {
+    "bg": "#06B6D4",
+    "hover": "#0891B2",
+    "text": "#fff"
+  },
+  "江西航空": {
+    "bg": "#10B981",
+    "hover": "#059669",
+    "text": "#fff"
+  },
+  "乌鲁木齐航空": {
+    "bg": "#EC4899",
+    "hover": "#DB2777",
+    "text": "#fff"
+  },
+  "东航": {
+    "bg": "#6366F1",
+    "hover": "#4F46E5",
+    "text": "#fff"
+  },
+  "南航": {
+    "bg": "#14B8A6",
+    "hover": "#0D9488",
+    "text": "#fff"
+  },
+  "河北航": {
+    "bg": "#F59E0B",
+    "hover": "#D97706",
+    "text": "#fff"
+  },
+  "龙浩": {
+    "bg": "#3B82F6",
+    "hover": "#2563EB",
+    "text": "#fff"
+  },
+  "邮航": {
+    "bg": "#06B6D4",
+    "hover": "#0891B2",
+    "text": "#fff"
+  },
+  "其他航司": {
+    "bg": "#6B7280",
+    "hover": "#4B5563",
+    "text": "#fff"
+  },
+  "default": {
+    "bg": "#6B7280",
+    "hover": "#4B5563",
+    "text": "#fff"
+  }
 };
 const MONTH = 6, YEAR = 2026;
 
-const COURSE_OPTIONS = [
-  "复训","初始","重获资格","资格更新","着陆提升","签派","个人训练",
-  "机长排查","维护","补充训练","强化训练","120天100小时检查",
-  "90天3起落","下半年复训科目验证","机务 FBS","转机型训练 FBS",
-  "转机型训练 FFS"
-];
-const CLIENT_OPTIONS = [
-  "圆通航空","龙浩航空","个人自费","邮政航空","江西航空",
-  "乌鲁木齐航空","东航","南航","河北航"
-];
-const POSITION_OPTIONS = ["B737NG-1","B757/767"];
-
-const LS_KEY = 'hnat_board_changes';
-
-// ══════════════════════════════════════════════
-// 变更管理
-// ══════════════════════════════════════════════
-
-// 给每条记录生成稳定 ID
-function taskId(t) {
-  return [t.日期, t.起, t.止, t.机位, t.学员||'', t.客户航司||''].join('|').replace(/\s/g,'');
-}
-
-// 初始化 ID 映射; 从 localStorage 加载变更
-let idMap = {};  // id → original task
-ALL.forEach((t,i) => { t._id = taskId(t); idMap[t._id] = t; });
-
-function loadChanges() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw || raw === 'null' || raw === 'undefined') return { added:[], modified:{}, deleted:[] };
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { added:[], modified:{}, deleted:[] };
-    return { added: parsed.added || [], modified: parsed.modified || {}, deleted: parsed.deleted || [] };
-  } catch(e) { return { added:[], modified:{}, deleted:[] }; }
-}
-function saveChanges(changes) {
-  localStorage.setItem(LS_KEY, JSON.stringify(changes));
-}
-
-// 检查任务时间是否与同日期其他任务重叠
-function checkOverlap(task, excludeId) {
-  const others = getEffectiveTasks().filter(t => t._id !== excludeId && t.日期 === task.日期 && t.机位 === task.机位);
-  const t1s = tm(task.起), t1e = tm(task.止);
-  if (!t1s || !t1e) return false;
-  for (const o of others) {
-    const t2s = tm(o.起), t2e = tm(o.止);
-    if (!t2s || !t2e) continue;
-    if (t1s < t2e && t1e > t2s) return o; // overlap found, return the conflicting task
-  }
-  return null;
-}
-
-// 合并原始数据 + 变更 → 渲染用数据
-function getEffectiveTasks() {
-  const ch = loadChanges();
-  const deletedSet = new Set(ch.deleted || []);
-  const modifiedMap = ch.modified || {};
-  const addedList = ch.added || [];
-
-  // 原始数据中排除已删除的，应用修改
-  let effective = ALL.filter(t => !deletedSet.has(t._id)).map(t => {
-    if (modifiedMap[t._id]) {
-      return { ...modifiedMap[t._id], _id: t._id, _status: 'modified' };
-    }
-    return { ...t, _status: 'original' };
-  });
-
-  // 追加新增
-  addedList.forEach(t => {
-    t._status = 'added';
-    effective.push(t);
-  });
-
-  return effective;
-}
-
-function updateBadge() {
-  const ch = loadChanges();
-  const total = (ch.added||[]).length + Object.keys(ch.modified||{}).length + (ch.deleted||[]).length;
-  const badge = document.getElementById('changeBadge');
-  if (total > 0) {
-    badge.style.display = 'inline-flex';
-    badge.textContent = total;
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-// ══════════════════════════════════════════════
-// 工具函数
-// ══════════════════════════════════════════════
 function tm(s) {
   if (!s || s==='nan') return 0;
   const t = s.includes(' ') ? s.split(' ')[1] : s;
   const p = t.split(':');
   return parseInt(p[0])*60 + parseInt(p[1]);
 }
+
 function db(val) { return val && val !== 'nan' ? val : ''; }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ══════════════════════════════════════════════
-// 拖拽
-// ══════════════════════════════════════════════
-let dragInfo = null;
-
-function handleDragStart(e) {
-  const el = e.target.closest('.task-block');
-  if (!el) return;
-  dragInfo = {
-    taskId: el.dataset.taskId,
-    colspan: parseInt(el.dataset.colspan) || 1,
-    duration: parseFloat(el.dataset.duration) || 2
-  };
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', dragInfo.taskId);
-  setTimeout(() => el.classList.add('dragging'), 0);
-}
-
-function handleDragEnd(e) {
-  const el = e.target.closest('.task-block');
-  if (el) el.classList.remove('dragging');
-  dragInfo = null;
-  document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
-}
-
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  const td = e.target.closest('td');
-  if (!td || !td.dataset.day || !dragInfo) return;
-
-  document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
-
-  const colspan = dragInfo.colspan;
-  const cells = td.closest('tr').querySelectorAll('td');
-  let startIdx = -1;
-  for (let i = 0; i < cells.length; i++) {
-    if (cells[i] === td) { startIdx = i; break; }
-  }
-  // Don't highlight the date label cell (index 0)
-  if (startIdx < 1) return;
-  // Check if the full span fits
-  const endIdx = startIdx + colspan - 1;
-  if (endIdx < cells.length) {
-    for (let i = startIdx; i <= endIdx; i++) cells[i].classList.add('drop-target');
-  } else {
-    td.classList.add('drop-invalid');
-  }
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
-
-  const td = e.target.closest('td');
-  if (!td || !td.dataset.day || !dragInfo) return;
-
-  const day = parseInt(td.dataset.day);
-  const slot = parseInt(td.dataset.slot);
-  const loSlot = parseInt(td.dataset.loSlot);
-  const absoluteSlot = loSlot + slot;
-  const taskId = decodeURIComponent(dragInfo.taskId);
-  const colspan = dragInfo.colspan;
-  const endSlot = absoluteSlot + colspan;
-
-  const sh = Math.floor(absoluteSlot/4), sm = (absoluteSlot%4)*15;
-  const eh = Math.floor(endSlot/4), em = (endSlot%4)*15;
-  const newDate = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
-  const startStr = `${sh.toString().padStart(2,'0')}:${sm.toString().padStart(2,'0')}`;
-  const endStr = `${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
-
-  const effective = getEffectiveTasks();
-  const task = effective.find(t => t._id === taskId);
-  if (!task) return;
-
-  const updated = { ...task };
-  updated.日期 = newDate;
-  updated.起 = `${newDate} ${startStr}`;
-  updated.止 = `${newDate} ${endStr}`;
-  updated.时长h = colspan * 0.5;
-
-  const conflict = checkOverlap(updated, taskId);
-  if (conflict) { dragInfo = null; render(); toast('时间冲突：与已有任务重叠', 'error'); return; }
-
-  const ch = loadChanges();
-  const isNew = ch.added.some(t => t._id === taskId);
-  if (isNew) {
-    ch.added = ch.added.map(t => t._id === taskId ? updated : t);
-  } else {
-    if (ch.deleted && ch.deleted.includes(taskId)) {
-      ch.deleted = ch.deleted.filter(d => d !== taskId);
-    }
-    ch.modified[taskId] = updated;
-  }
-  saveChanges(ch);
-  dragInfo = null;
-  render();
-  toast('已移动', 'success');
-}
-
-// ══════════════════════════════════════════════
-// 拉长/缩短（resize）—— 简化版：浮动提示 + 松手re-render
-// ══════════════════════════════════════════════
-let resizeState = null;
-
-function handleResizeStart(e, encodedId) {
-  e.stopPropagation(); e.preventDefault();
-  const block = e.target.closest('.task-block');
-  const td = block.closest('td');
-  const taskId = decodeURIComponent(encodedId);
-  const colspan = parseInt(block.dataset.colspan) || 1;
-  const day = parseInt(td.dataset.day);
-  const slot = parseInt(td.dataset.slot);
-  resizeState = { taskId, colspan, day, slot, startX: e.clientX, block };
-  // 显示浮动时长指示器
-  const tip = document.createElement('div');
-  tip.id = 'resizeTip';
-  tip.style.cssText = 'position:fixed;z-index:500;background:#111827;color:#38bdf8;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;border:1px solid #38bdf8;pointer-events:none';
-  tip.textContent = (colspan * 0.5).toFixed(1) + 'h';
-  document.body.appendChild(tip);
-  document.addEventListener('mousemove', handleResizeMove);
-  document.addEventListener('mouseup', handleResizeEnd);
-}
-
-function handleResizeMove(e) {
-  if (!resizeState) return;
-  const rs = resizeState;
-  const cellW = rs.block.parentElement.offsetWidth / (rs.colspan || 1);
-  const deltaPx = e.clientX - rs.startX;
-  const deltaSlots = Math.round(deltaPx / cellW);
-  const newColspan = Math.max(1, rs.colspan + deltaSlots);
-  const dur = (newColspan * 0.5).toFixed(1);
-  const tip = document.getElementById('resizeTip');
-  if (tip) { tip.textContent = dur + 'h'; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 30) + 'px'; }
-}
-
-function handleResizeEnd(e) {
-  document.removeEventListener('mousemove', handleResizeMove);
-  document.removeEventListener('mouseup', handleResizeEnd);
-  const tip = document.getElementById('resizeTip'); if (tip) tip.remove();
-  if (!resizeState) return;
-  const rs = resizeState;
-  resizeState = null;
-
-  const cellW = rs.block.parentElement.offsetWidth / (rs.colspan || 1);
-  const deltaSlots = Math.round((e.clientX - rs.startX) / cellW);
-  const newColspan = Math.max(1, rs.colspan + deltaSlots);
-  const newDuration = parseFloat((newColspan * 0.5).toFixed(1));
-
-  const effective = getEffectiveTasks();
-  const task = effective.find(t => t._id === rs.taskId);
-  if (!task || newDuration === parseFloat(task.时长h)) { render(); return; }
-
-  const updated = { ...task };
-  updated.时长h = newDuration;
-  const startMin = tm(task.起);
-  const endMin = startMin + newDuration * 60;
-  const eh = Math.floor(endMin / 60), em = endMin % 60;
-  updated.止 = `${task.日期} ${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
-
-  const conflict = checkOverlap(updated, rs.taskId);
-  if (conflict) { render(); toast('时间冲突：拉长后与已有任务重叠', 'error'); return; }
-
-  const ch = loadChanges();
-  const isNew = ch.added.some(t => t._id === rs.taskId);
-  if (isNew) ch.added = ch.added.map(t => t._id === rs.taskId ? updated : t);
-  else { if (ch.deleted) ch.deleted = ch.deleted.filter(d => d !== rs.taskId); ch.modified[rs.taskId] = updated; }
-  saveChanges(ch);
-  render();
-}
-
-// ══════════════════════════════════════════════
-// 渲染
-// ══════════════════════════════════════════════
 function render() {
-  try {
   const filter = document.getElementById('craftFilter').value;
-  let tasks = getEffectiveTasks().filter(t => t.机位 === filter);
+  let tasks = filter==='all' ? ALL : ALL.filter(t=>t.机位===filter);
 
-  const WDAYS = ['日','一','二','三','四','五','六'];
-  const loSlot = 12, hiSlot = 52; // 06:00 ~ 次日 02:00
-  function slotLabel(s) { const h=Math.floor(s/2)%24, m=(s%2)*30; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; }
-
+  let loMin = 24*60, hiMin = 0;
+  tasks.forEach(t=>{
+    const s=tm(t.起), e=tm(t.止);
+    if(s>0) loMin = Math.min(loMin, s);
+    if(e>0) hiMin = Math.max(hiMin, e);
+  });
+  if (loMin>=hiMin) { loMin=7*60; hiMin=22*60; }
+  const loSlot = Math.max(0, Math.floor(loMin/30) - 2);
+  const hiSlot = Math.ceil(hiMin/30) + 2;
+  
+  function slotH(slot) { return Math.floor(slot/2); }
+  function slotLabel(slot) { return `${slotH(slot).toString().padStart(2,'0')}:${slot%2===0?'00':'30'}`; }
+  
   const grid = {};
-  tasks.forEach(t => {
-    if (!t.日期) return;
+  tasks.forEach(t=>{
+    if (!t.日期 || t.日期==='nan') return;
     const day = parseInt(t.日期.substring(8,10));
     const sm = tm(t.起), em = tm(t.止);
-    const ss = Math.max(0, Math.floor(sm/30)), es = Math.ceil(em/30);
+    const startSlot = Math.max(0, Math.floor(sm/30));
+    const endSlot = Math.ceil(em/30);
     const client = db(t.客户航司);
-    const color = COLORS[client]||COLORS['default']||{bg:'#6b7280',hover:'#4b5563',text:'#fff'};
+    const color = COLORS[client] || COLORS['default'] || {bg:'#6b7280',hover:'#4b5563',text:'#fff'};
     if (!grid[day]) grid[day] = {};
-    for (let si = ss; si < es; si++) {
-      if (si<loSlot||si>=hiSlot) continue;
+    
+    for (let si = startSlot; si < endSlot; si++) {
+      if (si < loSlot || si >= hiSlot) continue;
       const idx = si - loSlot;
-      if (!grid[day][idx]) grid[day][idx] = [];
-      if (!grid[day][idx].some(e=>e._id===t._id)) {
-        grid[day][idx].push({client,course:db(t.课目类型),stStr:(t.起||'').split(' ').pop()||'',etStr:(t.止||'').split(' ').pop()||'',duration:db(t.时长h),students:db(t.学员),trainer:db(t.教员),inspector:db(t.检查员),color,colspan:1,isStart:false,_id:t._id,_status:t._status});
+      if (!grid[day][idx]) {
+        grid[day][idx] = {
+          client, course:db(t.课目类型),
+          stStr:(t.起||'').split(' ').pop()||'',
+          etStr:(t.止||'').split(' ').pop()||'',
+          duration: db(t.时长h),
+          students:db(t.学员), trainer:db(t.教员), inspector:db(t.检查员),
+          color, colspan: 1, isStart: false
+        };
       }
     }
-    const fi = ss-loSlot;
-    const arr = grid[day]&&grid[day][fi];
-    if (arr) { const m = arr.find(e=>e._id===t._id); if(m){ m.isStart=true; m.colspan=Math.min(es,hiSlot)-Math.max(ss,loSlot); } }
+    const firstIdx = startSlot - loSlot;
+    if (grid[day] && grid[day][firstIdx]) {
+      grid[day][firstIdx].isStart = true;
+      grid[day][firstIdx].colspan = Math.min(endSlot, hiSlot) - Math.max(startSlot, loSlot);
+    }
   });
 
   const usedDays = Object.keys(grid).map(Number).sort((a,b)=>a-b);
+  const WDAYS = ['日','一','二','三','四','五','六'];
+
   const clients = [...new Set(tasks.map(t=>db(t.客户航司)).filter(Boolean))];
   document.getElementById('legend').innerHTML = clients.map(c=>{
     const co = COLORS[c]||COLORS['default']||{bg:'#6b7280'};
@@ -566,8 +278,10 @@ function render() {
   }).join('');
   document.getElementById('stats').innerHTML = `<strong>${tasks.length}</strong>场 · <strong>${clients.length}</strong>家航司`;
 
-  let thead = '<tr><th class="corner date-col">日期</th>';
-  for (let si=loSlot; si<hiSlot; si++) thead += `<th class="time-col">${slotLabel(si)}</th>`;
+  let thead = '<tr><th class="corner date-col" style="white-space:normal;">日期<br>航司</th>';
+  for (let si=loSlot; si<hiSlot; si++) {
+    thead += `<th>${slotLabel(si)}</th>`;
+  }
   thead += '</tr>';
   document.getElementById('ganttHead').innerHTML = thead;
 
@@ -576,59 +290,37 @@ function render() {
     const ds = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
     const wd = WDAYS[new Date(ds).getDay()];
     tbody += `<tr><td>${day}<span class="dow"> 周${wd}</span></td>`;
+    
     let si = loSlot;
     while (si < hiSlot) {
       const idx = si - loSlot;
-      const arr = grid[day]&&grid[day][idx];
-      const st = arr ? arr.filter(g=>g.isStart) : [];
-      if (st.length > 0) {
-        const mc = Math.max(...st.map(g=>g.colspan));
-        const blocks = st.map((g,i)=>{
-          const cls = g._status==='added'?' added':g._status==='modified'?' changed':'';
-          const eid = encodeURIComponent(g._id||'');
-          return `<div class="task-block${cls}" style="background:${g.color.bg};color:${g.color.text}"
-            draggable="true" data-task-id="${eid}" data-colspan="${g.colspan}" data-duration="${g.duration}"
-            ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)"
-            onclick="openEditModal('${eid}')"
-            onmouseenter="showTip(event,'${esc(g.course)}','${esc(g.stStr)}','${esc(g.etStr)}','${esc(g.duration)}','${esc(g.students)}','${esc(g.trainer)}','${esc(g.inspector)}')"
-            onmouseleave="hideTip()">
-            <span class="drag-handle">⋮⋮</span>
-            <span class="edit-icon">✎</span>
-            <span class="client">${esc(g.client.replace('航空',''))}</span>
-            <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
-            <span class="resize-handle" onmousedown="handleResizeStart(event,'${eid}')" onclick="event.stopPropagation()">║</span>
-          </div>`;
-        }).join('');
-        tbody += `<td colspan="${mc}" data-day="${day}" data-slot="${idx}" data-lo-slot="${loSlot}" style="vertical-align:top;padding:0">${blocks}</td>`;
-        si += mc;
+      const g = grid[day] && grid[day][idx];
+      if (g && g.isStart) {
+        const jdata = JSON.stringify({client:g.client,course:g.course,stStr:g.stStr,etStr:g.etStr,duration:g.duration,students:g.students,trainer:g.trainer,inspector:g.inspector}).replace(/"/g,'&quot;');
+        tbody += `<td colspan="${g.colspan}"><div class="task-block" style="background:${g.color.bg};color:${g.color.text}"
+          onmouseenter="showTip(event, this, ${jdata})" onmouseleave="hideTip()">
+          <span class="client">${g.client.replace('航空','')}</span>
+          <span class="time">${g.stStr}-${g.etStr} (${g.duration}h)</span>
+        </div></td>`;
+        si += g.colspan;
       } else {
-        tbody += `<td class="empty" data-day="${day}" data-slot="${idx}" data-lo-slot="${loSlot}" ondragover="handleDragOver(event)" ondrop="handleDrop(event)"></td>`;
+        tbody += '<td class="empty"></td>';
         si++;
       }
     }
     tbody += '</tr>';
   });
   document.getElementById('ganttBody').innerHTML = tbody;
-
-  updateBadge();
-  document.getElementById('updateTime').textContent = `最后更新: ${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'})} CST`;
-  } catch(e) {
-    document.getElementById('ganttBody').innerHTML = `<tr><td colspan="100" style="padding:40px;color:#ef4444;font-size:14px;text-align:center">渲染错误: ${e.message}</td></tr>`;
-    document.getElementById('stats').innerHTML = '<strong style="color:#ef4444">渲染失败</strong>';
-  }
 }
 
-// ══════════════════════════════════════════════
-// 提示框 (字符串参数版本)
-// ══════════════════════════════════════════════
-function showTip(e, course, stStr, etStr, duration, students, trainer, inspector) {
+function showTip(e, el, g) {
   const tt = document.getElementById('tooltip');
   const lines = [];
-  if (course) lines.push(`<b>${course}</b>`);
-  lines.push(`<span class="dim">时间:</span> ${stStr} - ${etStr} (${duration}h)`);
-  if (students) lines.push(`<span class="dim">学员:</span> ${students}`);
-  if (trainer) lines.push(`<span class="dim">教员:</span> ${trainer}`);
-  if (inspector) lines.push(`<span class="dim">检查员:</span> ${inspector}`);
+  if(g.course) lines.push(`<b>${g.course}</b>`);
+  lines.push(`<span class="dim">时间:</span> ${g.stStr} - ${g.etStr} (${g.duration}h)`);
+  if(g.students) lines.push(`<span class="dim">学员:</span> ${g.students}`);
+  if(g.trainer) lines.push(`<span class="dim">教员:</span> ${g.trainer}`);
+  if(g.inspector) lines.push(`<span class="dim">检查员:</span> ${g.inspector}`);
   tt.innerHTML = lines.join('<br>');
   tt.classList.add('show');
   const x = Math.min(e.clientX+14, window.innerWidth-340);
@@ -637,266 +329,7 @@ function showTip(e, course, stStr, etStr, duration, students, trainer, inspector
 }
 function hideTip() { document.getElementById('tooltip').classList.remove('show'); }
 
-// ══════════════════════════════════════════════
-// 模态框
-// ══════════════════════════════════════════════
-let currentEditId = null;
-
-function openEditModal(id) {
-  currentEditId = decodeURIComponent(id);
-  const effective = getEffectiveTasks();
-  const task = effective.find(t => t._id === currentEditId);
-  if (!task) return;
-  buildModal('edit', task);
-}
-
-function openAddModal() {
-  currentEditId = null;
-  buildModal('add', {
-    日期: `${YEAR}-${MONTH.toString().padStart(2,'0')}-15`, 起: '', 止: '',
-    课目类型: '', 学员: '', 教员: '', 检查员: '',
-    客户航司: '', 机位: 'B737NG-1', 时长h: 2
-  });
-}
-
-function buildModal(mode, task) {
-  const tagClass = mode === 'add' ? 'new' : 'edit';
-  const tagText = mode === 'add' ? '新增' : '编辑';
-  const titleText = mode === 'add' ? '新增训练任务' : '编辑训练任务';
-
-  // 生成下拉选项
-  const courseOpts = COURSE_OPTIONS.map(c =>
-    `<option value="${esc(c)}" ${task.课目类型===c?'selected':''}>${c}</option>`).join('');
-  const clientOpts = CLIENT_OPTIONS.map(c =>
-    `<option value="${esc(c)}" ${task.客户航司===c?'selected':''}>${c}</option>`).join('');
-  const posOpts = POSITION_OPTIONS.map(p =>
-    `<option value="${esc(p)}" ${task.机位===p?'selected':''}>${p}</option>`).join('');
-
-  const html = `
-    <h2>${titleText} <span class="tag ${tagClass}">${tagText}</span></h2>
-    <div class="form-row">
-      <label>日期 <input type="date" id="fDate" value="${task.日期||''}"></label>
-      <label>机位
-        <select id="fPos">${posOpts}</select>
-      </label>
-    </div>
-    <div class="form-row">
-      <label>开始时间 <input type="time" id="fStart" value="${(task.起||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
-      <label>结束时间 <input type="time" id="fEnd" value="${(task.止||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
-      <label>时长(h) <input type="text" id="fDur" value="${task.时长h||2}" style="width:60px" readonly></label>
-    </div>
-    <div class="form-row">
-      <label>课目类型
-        <select id="fCourse">${courseOpts}</select>
-      </label>
-      <label>客户航司
-        <select id="fClient">${clientOpts}</select>
-      </label>
-    </div>
-    <div class="form-row">
-      <label>学员 <input type="text" id="fStudents" value="${esc(task.学员||'')}" placeholder="多人用空格分隔"></label>
-    </div>
-    <div class="form-row">
-      <label>教员 <input type="text" id="fTrainer" value="${esc(task.教员||'')}"></label>
-      <label>检查员 <input type="text" id="fInspector" value="${esc(task.检查员||'')}"></label>
-    </div>
-    <div class="form-actions">
-      ${mode==='edit' ? '<button class="btn-delete" onclick="deleteTask()">🗑 删除此任务</button>' : ''}
-      <button class="btn-cancel" onclick="closeModal()">取消</button>
-      <button class="btn-save" onclick="saveTask('${mode}')">💾 保存</button>
-    </div>
-  `;
-
-  document.getElementById('modalBox').innerHTML = html;
-  document.getElementById('modalOverlay').classList.add('active');
-}
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('active');
-  currentEditId = null;
-}
-
-function calcDuration() {
-  const sv = document.getElementById('fStart').value;
-  const ev = document.getElementById('fEnd').value;
-  if (!sv || !ev) return;
-  const [sh, sm] = sv.split(':').map(Number);
-  const [eh, em] = ev.split(':').map(Number);
-  const mins = (eh*60+em) - (sh*60+sm);
-  const dur = mins > 0 ? (mins/60) : 0;
-  document.getElementById('fDur').value = dur.toFixed(1);
-}
-
-function saveTask(mode) {
-  const dateVal = document.getElementById('fDate').value;
-  const startVal = document.getElementById('fStart').value;
-  const endVal = document.getElementById('fEnd').value;
-
-  if (!dateVal) { toast('请填写日期', 'error'); return; }
-  if (!startVal) { toast('请填写开始时间', 'error'); return; }
-  if (!endVal) { toast('请填写结束时间', 'error'); return; }
-
-  // 自动计算时长
-  const [sh, sm] = startVal.split(':').map(Number);
-  const [eh, em] = endVal.split(':').map(Number);
-  const totalMin = (eh*60+em) - (sh*60+sm);
-  const duration = totalMin > 0 ? parseFloat((totalMin/60).toFixed(1)) : 0.25;
-
-  const task = {
-    日期: dateVal,
-    起: `${dateVal} ${startVal}`,
-    止: `${dateVal} ${endVal}`,
-    课目类型: document.getElementById('fCourse').value,
-    学员: document.getElementById('fStudents').value || null,
-    教员: document.getElementById('fTrainer').value || null,
-    检查员: document.getElementById('fInspector').value || null,
-    客户航司: document.getElementById('fClient').value,
-    机位: document.getElementById('fPos').value,
-    时长h: duration
-  };
-
-  const eid = mode === 'add' ? null : currentEditId;
-  const conflict = checkOverlap(task, eid);
-  if (conflict) { toast('时间冲突：与已有任务重叠', 'error'); return; }
-
-  const ch = loadChanges();
-
-  if (mode === 'add') {
-    task._id = 'new_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-    ch.added.push(task);
-  } else {
-    // 修改
-    if (ch.deleted.includes(currentEditId)) {
-      ch.deleted = ch.deleted.filter(d => d !== currentEditId);
-    }
-    task._id = currentEditId;
-    ch.modified[currentEditId] = task;
-  }
-
-  saveChanges(ch);
-  closeModal();
-  render();
-  toast(mode === 'add' ? '任务已新增' : '任务已修改', 'success');
-}
-
-function deleteTask() {
-  if (!confirm('确定要删除这个训练任务吗？\n\n此操作仅标记删除，可以在「导出变更」前撤销。')) return;
-
-  const ch = loadChanges();
-  // 如果这是新增的，直接移除; 否则加入 deleted
-  const isNew = ch.added.some(t => t._id === currentEditId);
-  if (isNew) {
-    ch.added = ch.added.filter(t => t._id !== currentEditId);
-    // 也清理 modified 中可能残留的
-    delete ch.modified[currentEditId];
-  } else {
-    if (!ch.deleted.includes(currentEditId)) ch.deleted.push(currentEditId);
-    delete ch.modified[currentEditId];
-  }
-  saveChanges(ch);
-  closeModal();
-  render();
-  toast('任务已标记删除', 'success');
-}
-
-// ══════════════════════════════════════════════
-// 导出 & 撤销
-// ══════════════════════════════════════════════
-function toggleExportPanel() {
-  const panel = document.getElementById('exportPanel');
-  const ch = loadChanges();
-  const total = (ch.added||[]).length + Object.keys(ch.modified||{}).length + (ch.deleted||[]).length;
-
-  if (total === 0) {
-    toast('暂无变更数据', 'error');
-    return;
-  }
-
-  const exportData = {
-    exportedAt: new Date().toISOString(),
-    sourceSmartTable: '航空培训中心-模拟机排程试点-v0.1 > 训练任务',
-    sourceUrl: 'https://docs.qq.com/smartsheet/DTXpSY2hueUVsWG9m',
-    month: `${YEAR}-${MONTH}`,
-    changes: {
-      added: ch.added.map(({_id,_status,...t}) => t),
-      modified: Object.fromEntries(
-        Object.entries(ch.modified).map(([id, {_id,_status,...t}]) => [id, t])
-      ),
-      deleted: ch.deleted
-    },
-    summary: {
-      addedCount: (ch.added||[]).length,
-      modifiedCount: Object.keys(ch.modified||{}).length,
-      deletedCount: (ch.deleted||[]).length
-    }
-  };
-
-  document.getElementById('exportContent').textContent = JSON.stringify(exportData, null, 2);
-  panel.classList.add('active');
-}
-
-function copyExport() {
-  const text = document.getElementById('exportContent').textContent;
-  navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板', 'success'));
-}
-
-function downloadExport() {
-  const text = document.getElementById('exportContent').textContent;
-  const blob = new Blob([text], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `HNAT_展板变更_${YEAR}-${MONTH}_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('已下载 JSON 文件', 'success');
-}
-
-function clearAllChanges() {
-  const ch = loadChanges();
-  const total = (ch.added||[]).length + Object.keys(ch.modified||{}).length + (ch.deleted||[]).length;
-  if (total === 0) { toast('没有可撤销的变更', 'error'); return; }
-  if (!confirm(`确定要撤销全部 ${total} 条变更吗？\n\n此操作不可恢复。`)) return;
-
-  saveChanges({added:[], modified:{}, deleted:[]});
-  document.getElementById('exportPanel').classList.remove('active');
-  render();
-  toast('所有变更已撤销', 'success');
-}
-
-// ══════════════════════════════════════════════
-// Toast 提示
-// ══════════════════════════════════════════════
-function toast(msg, type) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast ' + type + ' show';
-  setTimeout(() => { el.className = 'toast'; }, 2000);
-}
-
-// ══════════════════════════════════════════════
-// 启动
-// ══════════════════════════════════════════════
-(function init() {
-  // 清理脏数据
-  const raw = localStorage.getItem(LS_KEY);
-  if (raw && (raw === 'null' || raw === 'undefined' || raw === '""')) {
-    localStorage.removeItem(LS_KEY);
-  } else if (raw) {
-    try {
-      const p = JSON.parse(raw);
-      if (!p || typeof p !== 'object' || Array.isArray(p)) {
-        localStorage.removeItem(LS_KEY);
-      }
-    } catch(e) { localStorage.removeItem(LS_KEY); }
-  }
-  // 全局拖放拦截（防止浏览器打开文件）
-  document.addEventListener('dragover', e => {
-    if (!e.target.closest('.table-wrap')) return;
-    e.preventDefault();
-  });
-  render();
-})();
+render();
 </script>
 </body>
 </html>
