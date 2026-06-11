@@ -1407,7 +1407,8 @@ async function publishToGitHub() {
     // 7. 发布成功后清空本地变更（已合并进发布版本）
     saveChanges({ added: [], modified: {}, deleted: [] });
     render();
-    toast('✅ 发布成功！大屏约30秒后自动刷新', 'success');
+    toast('✅ 发布成功！页面即将刷新…', 'success');
+    setTimeout(() => location.reload(), 1800);
 
   } catch (e) {
     toast('❌ 发布失败：' + e.message, 'error');
