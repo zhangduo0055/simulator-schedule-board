@@ -18,31 +18,39 @@ html, body {
   background:linear-gradient(180deg, #0d1424 0%, #0a0f1e 100%);
   border-bottom:1px solid rgba(56,189,248,.18);
   box-shadow:0 2px 24px rgba(0,0,0,.6);
-  display:flex; align-items:center; justify-content:space-between;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
   padding:0 24px;
 }
 
-/* 左：标题区 */
+/* 左：机型筛选 */
 .sb-left {
-  display:flex; flex-direction:column; justify-content:center; gap:4px;
-  min-width:280px;
+  display:flex; align-items:center; gap:10px;
+  justify-content:flex-start;
+}
+
+/* 中：公司名称居中 */
+.sb-center {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:5px;
+  text-align:center;
 }
 .sb-title {
-  font-size:20px; font-weight:700; letter-spacing:1.5px;
+  font-size:22px; font-weight:700; letter-spacing:2px;
   color:#f1f5f9;
-  display:flex; align-items:center; gap:8px;
+  display:flex; align-items:center; gap:10px;
 }
-.sb-title .plane-icon { font-size:22px; }
-.sb-title .hl { color:#38bdf8; }
+.sb-title .plane-icon { font-size:22px; color:#f1f5f9; }
 .sb-sub {
-  font-size:12px; color:#475569; letter-spacing:0.5px;
-  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:#4e6280; letter-spacing:0.8px;
+  display:flex; align-items:center; gap:10px;
 }
 .badge-live {
   display:inline-flex; align-items:center; gap:4px;
   padding:1px 8px; border-radius:20px;
   border:1px solid #22c55e; color:#22c55e; font-size:11px; font-weight:600;
-  animation: pulse-glow 2s infinite;
+  animation:pulse-glow 2s infinite;
 }
 @keyframes pulse-glow {
   0%,100% { box-shadow:0 0 4px rgba(34,197,94,.4); }
@@ -51,34 +59,34 @@ html, body {
 .dot-live { width:6px; height:6px; border-radius:50%; background:#22c55e; animation:blink 1s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-/* 中：筛选区 */
-.sb-center {
-  display:flex; align-items:center; gap:20px;
-  padding:0 32px;
-  border-left:1px solid rgba(56,189,248,.12);
-  border-right:1px solid rgba(56,189,248,.12);
+/* 右：航司筛选 + 倒计时 */
+.sb-right {
+  display:flex; align-items:center; gap:16px;
+  justify-content:flex-end;
 }
+
+/* 统一筛选控件样式 */
 .filter-item {
   display:flex; flex-direction:column; gap:4px;
 }
 .filter-item .f-lbl {
-  font-size:11px; color:#64748b; letter-spacing:1px; text-transform:uppercase;
-  font-weight:600;
+  font-size:10px; color:#4e6280; letter-spacing:1.5px;
+  font-weight:600; text-align:center;
 }
 .filter-item select {
-  height:36px; padding:0 32px 0 12px;
+  height:34px; padding:0 28px 0 10px;
   border-radius:6px;
   border:1px solid #1e3a5f;
   background-color:#0d2040;
   color:#93c5fd;
-  font-size:14px; font-weight:600;
+  font-size:13px; font-weight:600;
   font-family:'Microsoft YaHei','PingFang SC',sans-serif;
   cursor:pointer; outline:none;
   -webkit-appearance:none; appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2338bdf8'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 10px center; background-size:8px;
+  background-repeat:no-repeat; background-position:right 8px center; background-size:7px;
   transition:border-color .2s, background-color .2s, color .2s;
-  min-width:140px;
+  min-width:130px;
 }
 .filter-item select:hover,
 .filter-item select:focus {
@@ -89,35 +97,33 @@ html, body {
 .filter-item option,
 .filter-item optgroup { background:#0d2040; color:#93c5fd; }
 
-/* 右：状态区 */
-.sb-right {
-  display:flex; align-items:center; gap:16px;
-  min-width:200px; justify-content:flex-end;
+/* 分隔线 */
+.divider {
+  width:1px; height:40px;
+  background:linear-gradient(180deg, transparent, rgba(56,189,248,.2), transparent);
+}
+
+/* 倒计时区 */
+.countdown-block {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
 }
 .refresh-info {
-  display:flex; flex-direction:column; align-items:flex-end; gap:3px;
-}
-.refresh-info .update-time {
-  font-size:12px; color:#475569;
-}
-.refresh-info .next-lbl {
-  font-size:11px; color:#334155; letter-spacing:.5px;
+  font-size:11px; color:#334155; text-align:center; letter-spacing:.3px;
 }
 .countdown-wrap {
-  display:flex; align-items:center; gap:8px;
+  display:flex; align-items:center; gap:6px;
 }
-.countdown-ring { width:36px; height:36px; transform:rotate(-90deg); }
+.countdown-ring { width:32px; height:32px; transform:rotate(-90deg); }
 .countdown-ring circle { fill:none; stroke:#1e293b; stroke-width:3; }
 .countdown-ring .progress {
   stroke:url(#ringGrad); stroke-width:3; stroke-linecap:round;
   stroke-dasharray:94; transition:stroke-dashoffset 1s linear;
 }
 .countdown-num {
-  font-size:18px; font-weight:700; color:#38bdf8;
-  width:36px; text-align:center; letter-spacing:-1px;
-  line-height:1;
+  font-size:20px; font-weight:700; color:#38bdf8;
+  width:28px; text-align:center; letter-spacing:-1px; line-height:1;
 }
-.countdown-unit { font-size:11px; color:#334155; margin-top:2px; }
+.countdown-unit { font-size:10px; color:#334155; }
 
 /* iframe 铺满 */
 #board-frame {
@@ -148,7 +154,7 @@ html, body {
   content:'';
   position:absolute; bottom:-1px; left:10%; right:10%; height:1px;
   background:linear-gradient(90deg, transparent, #38bdf8 40%, #818cf8 60%, transparent);
-  opacity:.6;
+  opacity:.5;
 }
 </style>
 </head>
@@ -167,20 +173,8 @@ html, body {
 <!-- 状态栏 -->
 <div class="status-bar">
 
-  <!-- 左：标题 -->
+  <!-- 左：机型筛选 -->
   <div class="sb-left">
-    <div class="sb-title">
-      <span class="plane-icon">✈</span>
-      <span>河南航投<span class="hl">航空培训中心</span></span>
-    </div>
-    <div class="sb-sub">
-      <span>模拟机排程展板 · 2026年6月</span>
-      <span class="badge-live"><span class="dot-live"></span>实时展示</span>
-    </div>
-  </div>
-
-  <!-- 中：筛选控件 -->
-  <div class="sb-center">
     <div class="filter-item">
       <span class="f-lbl">机 型</span>
       <select id="craftSel" onchange="filterChanged()">
@@ -188,6 +182,22 @@ html, body {
         <option value="B757/767">🛫 B757/767</option>
       </select>
     </div>
+  </div>
+
+  <!-- 中：公司名称居中 -->
+  <div class="sb-center">
+    <div class="sb-title">
+      <span class="plane-icon">✈</span>
+      <span>河南航投航空培训中心</span>
+    </div>
+    <div class="sb-sub">
+      <span>模拟机排程展板 · 2026年6月</span>
+      <span class="badge-live"><span class="dot-live"></span>实时展示</span>
+    </div>
+  </div>
+
+  <!-- 右：航司筛选 + 倒计时 -->
+  <div class="sb-right">
     <div class="filter-item">
       <span class="f-lbl">航 司</span>
       <select id="airlineSel" onchange="filterChanged()">
@@ -205,25 +215,25 @@ html, body {
         </optgroup>
       </select>
     </div>
+
+    <div class="divider"></div>
+
+    <!-- 倒计时 -->
+    <div class="countdown-block">
+      <div class="countdown-wrap">
+        <svg class="countdown-ring" viewBox="0 0 36 36">
+          <circle cx="18" cy="18" r="15"/>
+          <circle class="progress" cx="18" cy="18" r="15" id="countdownRing"/>
+        </svg>
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <span class="countdown-num" id="countdownText">30</span>
+          <span class="countdown-unit">秒</span>
+        </div>
+      </div>
+      <div class="refresh-info" id="lastUpdate">--</div>
+    </div>
   </div>
 
-  <!-- 右：倒计时 + 更新时间 -->
-  <div class="sb-right">
-    <div class="refresh-info">
-      <span class="update-time" id="lastUpdate">--</span>
-      <span class="next-lbl">下次刷新</span>
-    </div>
-    <div class="countdown-wrap">
-      <svg class="countdown-ring" viewBox="0 0 36 36">
-        <circle cx="18" cy="18" r="15"/>
-        <circle class="progress" cx="18" cy="18" r="15" id="countdownRing"/>
-      </svg>
-    </div>
-    <div style="display:flex;flex-direction:column;align-items:center">
-      <span class="countdown-num" id="countdownText">30</span>
-      <span class="countdown-unit">秒</span>
-    </div>
-  </div>
 </div>
 
 <!-- 展板 iframe -->
@@ -241,7 +251,7 @@ const REFRESH_SEC = 30;
 
 let countdown = REFRESH_SEC;
 const ring = document.getElementById('countdownRing');
-const CIRCUMFERENCE = 2 * Math.PI * 15; // r=15 → ~94.25
+const CIRCUMFERENCE = 2 * Math.PI * 15;
 ring.style.strokeDasharray = CIRCUMFERENCE;
 
 function updateRing(sec) {
@@ -252,7 +262,7 @@ function updateRing(sec) {
 function setLastUpdate() {
   const now = new Date();
   document.getElementById('lastUpdate').textContent =
-    '上次更新 ' + now.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    '更新 ' + now.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
 
 function buildBoardURL() {
@@ -280,10 +290,7 @@ function filterChanged() { loadBoard(); }
 
 setInterval(() => {
   countdown--;
-  if (countdown <= 0) {
-    loadBoard();
-    return;
-  }
+  if (countdown <= 0) { loadBoard(); return; }
   document.getElementById('countdownText').textContent = countdown;
   updateRing(countdown);
 }, 1000);
