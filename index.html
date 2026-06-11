@@ -1123,9 +1123,20 @@ function toast(msg, type) {
 // ══════════════════════════════════════════════
 (function init() {
   // 大屏展示模式：URL 带 ?mode=display 时隐藏所有编辑控件
-  if (new URLSearchParams(window.location.search).get('mode') === 'display') {
+  const sp = new URLSearchParams(window.location.search);
+  if (sp.get('mode') === 'display') {
     document.body.classList.add('display-mode');
     document.title = '河南航投航空培训中心 · 模拟机排程 · 大屏展示';
+
+    // 读取 display.html 传入的筛选参数，自动切换机型和航司
+    const craftParam   = sp.get('craft');
+    const airlineParam = sp.get('airline') || '';
+    if (craftParam) {
+      const sel = document.getElementById('craftFilter');
+      if (sel) sel.value = craftParam;
+    }
+    const airlineSel = document.getElementById('airlineFilter');
+    if (airlineSel) airlineSel.value = airlineParam;
   }
 
   // 清理脏数据
