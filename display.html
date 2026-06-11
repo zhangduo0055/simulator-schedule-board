@@ -16,13 +16,13 @@ html, body {
   position:fixed; top:0; left:0; right:0; z-index:100;
   height:36px; background:#0f172a; border-bottom:1px solid #1e293b;
   display:flex; align-items:center; justify-content:space-between;
-  padding:0 20px; font-size:12px; color:#64748b;
+  padding:0 16px; font-size:12px; color:#64748b;
 }
-.status-bar .left { display:flex; align-items:center; gap:12px; }
+.status-bar .left { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .status-bar .logo { color:#38bdf8; font-weight:700; font-size:13px; letter-spacing:0.5px; }
 .status-bar .badge {
   background:#1e293b; border:1px solid #334155; border-radius:4px;
-  padding:2px 8px; color:#94a3b8;
+  padding:2px 8px; color:#94a3b8; white-space:nowrap;
 }
 .status-bar .badge.live {
   border-color:#22c55e; color:#22c55e;
@@ -30,20 +30,37 @@ html, body {
 }
 @keyframes pulse-border {
   0%,100% { border-color:#22c55e; }
-  50% { border-color:#166534; }
+  50%      { border-color:#166534; }
 }
-.status-bar .right { display:flex; align-items:center; gap:16px; }
-.countdown-ring {
-  width:24px; height:24px; transform:rotate(-90deg);
-}
-.countdown-ring circle {
-  fill:none; stroke:#334155; stroke-width:3;
-}
+.status-bar .right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.countdown-ring { width:24px; height:24px; transform:rotate(-90deg); }
+.countdown-ring circle { fill:none; stroke:#334155; stroke-width:3; }
 .countdown-ring .progress {
   stroke:#38bdf8; stroke-width:3; stroke-linecap:round;
-  stroke-dasharray: 60;
-  transition:stroke-dashoffset 1s linear;
+  stroke-dasharray:60; transition:stroke-dashoffset 1s linear;
 }
+
+/* 筛选区（居中） */
+.filter-group {
+  display:flex; align-items:center; gap:6px;
+  border-left:1px solid #1e293b; border-right:1px solid #1e293b;
+  padding:0 16px;
+}
+.filter-group .lbl { color:#475569; font-size:11px; white-space:nowrap; }
+/* 紧凑 select 样式 */
+.status-bar select {
+  height:24px; padding:0 22px 0 8px;
+  border-radius:4px; border:1px solid #334155;
+  background-color:#1e293b; color:#94a3b8;
+  font-size:12px; font-family:'Microsoft YaHei','PingFang SC',sans-serif;
+  cursor:pointer; outline:none;
+  -webkit-appearance:none; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 5px center; background-size:8px;
+  transition:border-color .15s, color .15s;
+}
+.status-bar select:hover { border-color:#38bdf8; color:#e2e8f0; }
+.status-bar option, .status-bar optgroup { background:#1e293b; color:#94a3b8; }
 
 /* iframe 铺满 */
 #board-frame {
@@ -74,11 +91,39 @@ html, body {
 
 <!-- 状态栏 -->
 <div class="status-bar">
+
+  <!-- 左：标题 -->
   <div class="left">
     <span class="logo">🛩 河南航投航空培训中心</span>
     <span class="badge">模拟机排程 · 2026年6月</span>
     <span class="badge live" id="liveTag">● 实时展示</span>
   </div>
+
+  <!-- 中：筛选控件（前台可操作，无编辑权限） -->
+  <div class="filter-group">
+    <span class="lbl">机型</span>
+    <select id="craftSel" onchange="filterChanged()">
+      <option value="B737NG-1">B737NG-1</option>
+      <option value="B757/767">B757/767</option>
+    </select>
+    <span class="lbl" style="margin-left:6px">航司</span>
+    <select id="airlineSel" onchange="filterChanged()">
+      <option value="">全部航司</option>
+      <optgroup label="选择后其他航司显示「占用」">
+        <option value="圆通航空">圆通航空</option>
+        <option value="龙浩航空">龙浩航空</option>
+        <option value="个人自费">个人自费</option>
+        <option value="邮政航空">邮政航空</option>
+        <option value="江西航空">江西航空</option>
+        <option value="乌鲁木齐航空">乌鲁木齐航空</option>
+        <option value="东航">东航</option>
+        <option value="南航">南航</option>
+        <option value="河北航">河北航</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <!-- 右：刷新状态 -->
   <div class="right">
     <span id="lastUpdate" style="color:#475569">--</span>
     <span style="color:#475569">下次刷新</span>
@@ -103,15 +148,15 @@ html, body {
 // ══════════════════════
 // 配置
 // ══════════════════════
-const BOARD_URL = 'https://zhangduo0055.github.io/simulator-schedule-board/index.html?mode=display';
-const REFRESH_SEC = 30;  // 自动刷新间隔（秒）
+const BASE_URL   = 'https://zhangduo0055.github.io/simulator-schedule-board/index.html';
+const REFRESH_SEC = 30;
 
 // ══════════════════════
 // 状态
 // ══════════════════════
 let countdown = REFRESH_SEC;
 const ring = document.getElementById('countdownRing');
-const ringCircumference = 60; // 2π×r ≈ 2×3.14159×9.55 ≈ 60
+const ringCircumference = 60;
 
 function updateRing(sec) {
   const offset = ringCircumference - (sec / REFRESH_SEC) * ringCircumference;
@@ -124,18 +169,30 @@ function setLastUpdate() {
     '上次更新 ' + now.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
 
+// 构建带筛选参数的 iframe URL
+function buildBoardURL() {
+  const craft   = document.getElementById('craftSel').value   || 'B737NG-1';
+  const airline = document.getElementById('airlineSel').value;
+  const p = new URLSearchParams({ mode: 'display', craft, _t: Date.now() });
+  if (airline) p.set('airline', airline);
+  return BASE_URL + '?' + p.toString();
+}
+
 function loadBoard() {
   document.getElementById('refreshMask').classList.add('show');
   const frame = document.getElementById('board-frame');
-  // 强制绕过缓存
-  const url = BOARD_URL + '&_t=' + Date.now();
   frame.onload = function() {
     document.getElementById('refreshMask').classList.remove('show');
     setLastUpdate();
   };
-  frame.src = url;
+  frame.src = buildBoardURL();
   countdown = REFRESH_SEC;
   updateRing(countdown);
+}
+
+// 筛选变更 → 立即重载 iframe
+function filterChanged() {
+  loadBoard();
 }
 
 // 倒计时 tick
