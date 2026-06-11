@@ -34,6 +34,16 @@ body {
 .ctrl-btn.danger:hover { background:#7f1d1d; }
 .ctrl-btn.export { border-color:var(--green); color:var(--green); }
 .ctrl-btn.export:hover { background:#14532d; }
+.ctrl-btn.publish { border-color:#a855f7; color:#a855f7; }
+.ctrl-btn.publish:hover { background:#2e1065; }
+.ctrl-btn.publish:disabled { opacity:.5; cursor:wait; }
+/* 大屏展示模式：隐藏编辑控件 */
+body.display-mode .right-ctrls { display:none !important; }
+body.display-mode .drag-handle,
+body.display-mode .resize-handle,
+body.display-mode .edit-icon { display:none !important; }
+body.display-mode .task-block { cursor:default !important; pointer-events:none; }
+body.display-mode .table-wrap { max-height:calc(100vh - 80px); }
 .change-badge {
   display:inline-flex; align-items:center; justify-content:center;
   width:22px; height:22px; border-radius:50%; background:var(--yellow);
@@ -111,6 +121,20 @@ td.empty:nth-child(even) { background:#111d33; }
   transition:border .2s;
 }
 .form-row label input:focus, .form-row label select:focus { border-color:var(--accent); }
+/* 可输可选的组合框 */
+.combobox-wrap { position:relative; display:flex; }
+.combobox-wrap input {
+  flex:1; padding:10px 32px 10px 12px; border-radius:8px; border:1px solid var(--border);
+  background:#0f172a; color:var(--text); font-size:14px; font-family:inherit; outline:none;
+  transition:border .2s;
+}
+.combobox-wrap input:focus { border-color:var(--accent); }
+.combobox-wrap .cb-arrow {
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  color:var(--muted); pointer-events:none; font-size:11px;
+}
+/* datalist 原生下拉在深色背景下颜色修复 */
+input::-webkit-calendar-picker-indicator { display:none !important; }
 .form-row label input[type="date"]::-webkit-calendar-picker-indicator,
 .form-row label input[type="time"]::-webkit-calendar-picker-indicator { filter:invert(1); }
 
@@ -160,6 +184,24 @@ td.empty:nth-child(even) { background:#111d33; }
 .resize-handle:hover { color:rgba(255,255,255,.8); background:rgba(255,255,255,.1); border-radius:3px; }
 .task-block[draggable="true"] { cursor:grab; }
 .task-block.dragging { opacity:.3; }
+/* 15分钟精度偏移标记 */
+.offset-badge { font-size:9px; opacity:.7; margin-right:2px; vertical-align:middle; }
+.task-block.has-offset { box-shadow: inset 0 0 0 1px rgba(255,255,255,.5); }
+/* 其他航司占用块 */
+.occupied-block {
+  width:100%; height:100%; min-height:var(--row-h); padding:3px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:3px; cursor:not-allowed;
+  background:repeating-linear-gradient(45deg,#1e293b,#1e293b 3px,#0f172a 3px,#0f172a 8px);
+  border:1px solid #334155;
+}
+.occupied-block .occ-label { font-size:9px; color:#64748b; font-weight:600; }
+.occupied-block .occ-time  { font-size:9px; color:#475569; margin-top:1px; }
+/* 空格子悬停提示（可点击新增） */
+td.empty.can-add { cursor:cell; }
+td.empty.can-add:hover { background:rgba(56,189,248,.07) !important; outline:1px dashed rgba(56,189,248,.25); outline-offset:-2px; }
+/* 周末行淡黄底色 */
+tr.weekend-row > td:first-child { color:var(--yellow); }
 .task-block.resizing { opacity:.6; }
 td.drop-target { background: rgba(56,189,248,.15) !important; outline:2px dashed var(--accent); outline-offset:-2px; }
 td.drop-invalid { background: rgba(239,68,68,.1) !important; }
@@ -194,8 +236,23 @@ td.drop-invalid { background: rgba(239,68,68,.1) !important; }
       <option value="B737NG-1">🛩 B737NG-1</option>
       <option value="B757/767">🛫 B757/767</option>
     </select>
+    <select id="airlineFilter" onchange="render()">
+      <option value="">✈ 全部航司</option>
+      <optgroup label="── 选择后其他航司显示为「占用」──">
+        <option value="圆通航空">圆通航空</option>
+        <option value="龙浩航空">龙浩航空</option>
+        <option value="个人自费">个人自费</option>
+        <option value="邮政航空">邮政航空</option>
+        <option value="江西航空">江西航空</option>
+        <option value="乌鲁木齐航空">乌鲁木齐航空</option>
+        <option value="东航">东航</option>
+        <option value="南航">南航</option>
+        <option value="河北航">河北航</option>
+      </optgroup>
+    </select>
     <div class="stat-badge" id="stats"></div>
     <button class="ctrl-btn export" onclick="toggleExportPanel()">📤 导出变更</button>
+    <button class="ctrl-btn publish" id="publishBtn" onclick="publishToGitHub()">🚀 发布到大屏</button>
     <button class="ctrl-btn danger" onclick="clearAllChanges()">↺ 撤销变更</button>
     <span class="change-badge" id="changeBadge">0</span>
   </div>
@@ -252,13 +309,14 @@ const COLORS = {
 };
 const MONTH = 6, YEAR = 2026;
 
-const COURSE_OPTIONS = [
+// 使用 let，运行时可新增条目
+let COURSE_OPTIONS = [
   "复训","初始","重获资格","资格更新","着陆提升","签派","个人训练",
   "机长排查","维护","补充训练","强化训练","120天100小时检查",
   "90天3起落","下半年复训科目验证","机务 FBS","转机型训练 FBS",
   "转机型训练 FFS"
 ];
-const CLIENT_OPTIONS = [
+let CLIENT_OPTIONS = [
   "圆通航空","龙浩航空","个人自费","邮政航空","江西航空",
   "乌鲁木齐航空","东航","南航","河北航"
 ];
@@ -368,14 +426,25 @@ function handleDragStart(e) {
   };
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', dragInfo.taskId);
-  setTimeout(() => el.classList.add('dragging'), 0);
+
+  // 【关键】在元素移出 DOM 之前，先绑定 dragend 监听器。
+  // 浏览器会对脱离 DOM 的元素仍然触发 dragend，但事件不会冒泡到 document，
+  // 所以必须直接绑在元素引用上，否则拖拽取消时 dragInfo 无法清空导致任务消失。
+  el.addEventListener('dragend', function onEnd() {
+    el.removeEventListener('dragend', onEnd);
+    document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
+    if (dragInfo) { dragInfo = null; render(); }
+  });
+
+  // 重渲染使原格子变为可放置的空 td（允许往后推1格），必须在 setTimeout 里，
+  // 让浏览器先捕获拖动快照，否则 ghost image 为空白
+  setTimeout(() => render(), 0);
 }
 
 function handleDragEnd(e) {
-  const el = e.target.closest('.task-block');
-  if (el) el.classList.remove('dragging');
-  dragInfo = null;
+  // 作为 document 级兜底：防止 element-level 监听没触发时 dragInfo 残留
   document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
+  if (dragInfo) { dragInfo = null; render(); }
 }
 
 function handleDragOver(e) {
@@ -386,21 +455,29 @@ function handleDragOver(e) {
 
   document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
 
+  const loSlot = parseInt(td.dataset.loSlot);
+  const hiSlot = 52;
+  const day = parseInt(td.dataset.day);
+  const slot = parseInt(td.dataset.slot);
+  const absoluteSlot = loSlot + slot;
   const colspan = dragInfo.colspan;
-  const cells = td.closest('tr').querySelectorAll('td');
-  let startIdx = -1;
-  for (let i = 0; i < cells.length; i++) {
-    if (cells[i] === td) { startIdx = i; break; }
-  }
-  // Don't highlight the date label cell (index 0)
-  if (startIdx < 1) return;
-  // Check if the full span fits
-  const endIdx = startIdx + colspan - 1;
-  if (endIdx < cells.length) {
-    for (let i = startIdx; i <= endIdx; i++) cells[i].classList.add('drop-target');
-  } else {
-    td.classList.add('drop-invalid');
-  }
+  const endSlot = absoluteSlot + colspan;
+
+  // 超出时间轴范围
+  if (endSlot > hiSlot) { td.classList.add('drop-invalid'); return; }
+
+  // 用数据层检查冲突（不依赖DOM colspan下标，排除被拖任务自身）
+  const draggedId = decodeURIComponent(dragInfo.taskId);
+  const filter = document.getElementById('craftFilter').value;
+  const sh = Math.floor(absoluteSlot/2), sm_v = (absoluteSlot%2)*30;
+  const eh = Math.floor(endSlot/2), em_v = (endSlot%2)*30;
+  const newDate = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
+  const startStr = `${sh.toString().padStart(2,'0')}:${sm_v.toString().padStart(2,'0')}`;
+  const endStr   = `${eh.toString().padStart(2,'0')}:${em_v.toString().padStart(2,'0')}`;
+  const fakeTask = { 日期: newDate, 起: `${newDate} ${startStr}`, 止: `${newDate} ${endStr}`, 机位: filter };
+
+  if (checkOverlap(fakeTask, draggedId)) { td.classList.add('drop-invalid'); return; }
+  td.classList.add('drop-target');
 }
 
 function handleDrop(e) {
@@ -410,6 +487,14 @@ function handleDrop(e) {
   const td = e.target.closest('td');
   if (!td || !td.dataset.day || !dragInfo) return;
 
+  // 范围校验：endSlot不超出时间轴
+  const loSlot2 = parseInt(td.dataset.loSlot);
+  const hiSlot2 = 52;
+  const slot2 = parseInt(td.dataset.slot);
+  if (loSlot2 + slot2 + dragInfo.colspan > hiSlot2) {
+    dragInfo=null; render(); toast('空间不足', 'error'); return;
+  }
+
   const day = parseInt(td.dataset.day);
   const slot = parseInt(td.dataset.slot);
   const loSlot = parseInt(td.dataset.loSlot);
@@ -418,15 +503,16 @@ function handleDrop(e) {
   const colspan = dragInfo.colspan;
   const endSlot = absoluteSlot + colspan;
 
-  const sh = Math.floor(absoluteSlot/4), sm = (absoluteSlot%4)*15;
-  const eh = Math.floor(endSlot/4), em = (endSlot%4)*15;
+  // 时间换算：去掉 %24，支持 24:xx/25:xx 格式表示次日时间（与 tm() 兼容）
+  const sh = Math.floor(absoluteSlot/2), sm = (absoluteSlot%2)*30;
+  const eh = Math.floor(endSlot/2), em = (endSlot%2)*30;
   const newDate = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
   const startStr = `${sh.toString().padStart(2,'0')}:${sm.toString().padStart(2,'0')}`;
   const endStr = `${eh.toString().padStart(2,'0')}:${em.toString().padStart(2,'0')}`;
 
   const effective = getEffectiveTasks();
   const task = effective.find(t => t._id === taskId);
-  if (!task) return;
+  if (!task) { dragInfo = null; render(); toast('找不到任务数据，请刷新页面', 'error'); return; }
 
   const updated = { ...task };
   updated.日期 = newDate;
@@ -530,7 +616,10 @@ function handleResizeEnd(e) {
 function render() {
   try {
   const filter = document.getElementById('craftFilter').value;
+  const airlineFilter = document.getElementById('airlineFilter').value;
   let tasks = getEffectiveTasks().filter(t => t.机位 === filter);
+  // 拖拽进行中时排除被拖任务，让其原格子变成可放置的空td（否则部分覆盖原位的拖动会被拒绝）
+  if (dragInfo) tasks = tasks.filter(t => encodeURIComponent(t._id||'') !== dragInfo.taskId);
 
   const WDAYS = ['日','一','二','三','四','五','六'];
   const loSlot = 12, hiSlot = 52; // 06:00 ~ 次日 02:00
@@ -543,28 +632,52 @@ function render() {
     const sm = tm(t.起), em = tm(t.止);
     const ss = Math.max(0, Math.floor(sm/30)), es = Math.ceil(em/30);
     const client = db(t.客户航司);
-    const color = COLORS[client]||COLORS['default']||{bg:'#6b7280',hover:'#4b5563',text:'#fff'};
+    // 航司筛选：非当前航司的任务显示为匿名「占用」块
+    const isOccupied = !!(airlineFilter && client !== airlineFilter);
+    const color = isOccupied
+      ? {bg:'#374151', text:'#6B7280'}
+      : (COLORS[client]||COLORS['default']||{bg:'#6b7280',hover:'#4b5563',text:'#fff'});
     if (!grid[day]) grid[day] = {};
     for (let si = ss; si < es; si++) {
       if (si<loSlot||si>=hiSlot) continue;
       const idx = si - loSlot;
       if (!grid[day][idx]) grid[day][idx] = [];
       if (!grid[day][idx].some(e=>e._id===t._id)) {
-        grid[day][idx].push({client,course:db(t.课目类型),stStr:(t.起||'').split(' ').pop()||'',etStr:(t.止||'').split(' ').pop()||'',duration:db(t.时长h),students:db(t.学员),trainer:db(t.教员),inspector:db(t.检查员),color,colspan:1,isStart:false,_id:t._id,_status:t._status});
+        grid[day][idx].push({client,course:db(t.课目类型),stStr:(t.起||'').split(' ').pop()||'',etStr:(t.止||'').split(' ').pop()||'',duration:db(t.时长h),students:db(t.学员),trainer:db(t.教员),inspector:db(t.检查员),color,colspan:1,isStart:false,_id:t._id,_status:t._status,isOccupied});
       }
     }
-    const fi = ss-loSlot;
+    // fi 可能为负（任务起始早于 loSlot=06:00），此时以 loSlot 为起点显示
+    const fi = Math.max(ss, loSlot) - loSlot;
     const arr = grid[day]&&grid[day][fi];
-    if (arr) { const m = arr.find(e=>e._id===t._id); if(m){ m.isStart=true; m.colspan=Math.min(es,hiSlot)-Math.max(ss,loSlot); } }
+    if (arr) {
+      const m = arr.find(e=>e._id===t._id);
+      if (m) {
+        m.isStart = true;
+        m.colspan = Math.min(es, hiSlot) - Math.max(ss, loSlot);
+        // 15分钟精度：计算格子内像素偏移（每格40px对应30min）
+        const SLOT_PX = 40;
+        m.startOffsetPx = (sm % 30) / 30 * SLOT_PX;           // 如08:15 → 20px左偏
+        m.endOffsetPx   = (es*30 > em) ? (es*30 - em) / 30 * SLOT_PX : 0; // 如10:45 → 20px右缩
+      }
+    }
   });
 
-  const usedDays = Object.keys(grid).map(Number).sort((a,b)=>a-b);
+  // 全月日期：1 到月末每天都渲染，无任务的日期显示空行
+  const daysInMonth = new Date(YEAR, MONTH, 0).getDate();
+  const allDays = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
   const clients = [...new Set(tasks.map(t=>db(t.客户航司)).filter(Boolean))];
+  // 统计总小时数（airlineFilter 模式下只统计当前航司）
+  const statTasks = airlineFilter ? tasks.filter(t => db(t.客户航司) === airlineFilter) : tasks;
+  const totalHours = statTasks.reduce((s, t) => s + (parseFloat(t.时长h)||0), 0);
+  const hoursStr = totalHours % 1 === 0 ? totalHours.toFixed(0) : totalHours.toFixed(1);
   document.getElementById('legend').innerHTML = clients.map(c=>{
     const co = COLORS[c]||COLORS['default']||{bg:'#6b7280'};
     return `<div class="legend-item"><span class="legend-dot" style="background:${co.bg}"></span>${c}</div>`;
-  }).join('');
-  document.getElementById('stats').innerHTML = `<strong>${tasks.length}</strong>场 · <strong>${clients.length}</strong>家航司`;
+  }).join('') + (airlineFilter ? '' : '');
+  document.getElementById('stats').innerHTML = airlineFilter
+    ? `<strong>${statTasks.length}</strong>场 · <strong>${hoursStr}</strong>小时 <span style="color:var(--muted);font-size:12px">（${airlineFilter}）</span>`
+    : `<strong>${tasks.length}</strong>场 · <strong>${hoursStr}</strong>小时 · <strong>${clients.length}</strong>家航司`;
 
   let thead = '<tr><th class="corner date-col">日期</th>';
   for (let si=loSlot; si<hiSlot; si++) thead += `<th class="time-col">${slotLabel(si)}</th>`;
@@ -572,10 +685,16 @@ function render() {
   document.getElementById('ganttHead').innerHTML = thead;
 
   let tbody = '';
-  usedDays.forEach(day=>{
+  allDays.forEach(day=>{
     const ds = `${YEAR}-${MONTH.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
     const wd = WDAYS[new Date(ds).getDay()];
-    tbody += `<tr><td>${day}<span class="dow"> 周${wd}</span></td>`;
+    // 周末行加淡色背景
+    const isWeekend = (new Date(ds).getDay()===0||new Date(ds).getDay()===6);
+    const rowStyle = isWeekend ? ' style="background:rgba(99,102,241,.04)"' : '';
+    const dateLabel = isWeekend
+      ? `${day}<span class="dow" style="color:#818cf8"> 周${wd}</span>`
+      : `${day}<span class="dow"> 周${wd}</span>`;
+    tbody += `<tr${rowStyle}><td>${dateLabel}</td>`;
     let si = loSlot;
     while (si < hiSlot) {
       const idx = si - loSlot;
@@ -583,10 +702,23 @@ function render() {
       const st = arr ? arr.filter(g=>g.isStart) : [];
       if (st.length > 0) {
         const mc = Math.max(...st.map(g=>g.colspan));
-        const blocks = st.map((g,i)=>{
+        const blocks = st.map((g)=>{
+          // 占用块：不暴露航司名称，只显示「占用」
+          if (g.isOccupied) {
+            return `<div class="task-block" style="background:${g.color.bg};color:${g.color.text};opacity:.75;cursor:default;"
+              data-colspan="${g.colspan}" data-duration="${g.duration}">
+              <span style="font-size:11px;letter-spacing:1px">占用</span>
+              <span class="time" style="color:#4B5563">${esc(g.stStr)}-${esc(g.etStr)}</span>
+            </div>`;
+          }
           const cls = g._status==='added'?' added':g._status==='modified'?' changed':'';
           const eid = encodeURIComponent(g._id||'');
-          return `<div class="task-block${cls}" style="background:${g.color.bg};color:${g.color.text}"
+          const lOff = g.startOffsetPx||0, rOff = g.endOffsetPx||0;
+          const offStyle = (lOff||rOff)
+            ? `margin-left:${lOff}px;width:calc(100% - ${lOff+rOff}px);`
+            : '';
+          const hasOffset = (lOff||rOff) ? ' has-offset' : '';
+          return `<div class="task-block${cls}${hasOffset}" style="background:${g.color.bg};color:${g.color.text};${offStyle}"
             draggable="true" data-task-id="${eid}" data-colspan="${g.colspan}" data-duration="${g.duration}"
             ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)"
             onclick="openEditModal('${eid}')"
@@ -594,6 +726,7 @@ function render() {
             onmouseleave="hideTip()">
             <span class="drag-handle">⋮⋮</span>
             <span class="edit-icon">✎</span>
+            ${hasOffset ? `<span class="offset-badge" title="精确时间，非30分钟对齐">⏱</span>` : ''}
             <span class="client">${esc(g.client.replace('航空',''))}</span>
             <span class="time">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
             <span class="resize-handle" onmousedown="handleResizeStart(event,'${eid}')" onclick="event.stopPropagation()">║</span>
@@ -665,10 +798,8 @@ function buildModal(mode, task) {
   const titleText = mode === 'add' ? '新增训练任务' : '编辑训练任务';
 
   // 生成下拉选项
-  const courseOpts = COURSE_OPTIONS.map(c =>
-    `<option value="${esc(c)}" ${task.课目类型===c?'selected':''}>${c}</option>`).join('');
-  const clientOpts = CLIENT_OPTIONS.map(c =>
-    `<option value="${esc(c)}" ${task.客户航司===c?'selected':''}>${c}</option>`).join('');
+  const courseDatalist = COURSE_OPTIONS.map(c => `<option value="${esc(c)}">`).join('');
+  const clientDatalist = CLIENT_OPTIONS.map(c => `<option value="${esc(c)}">`).join('');
   const posOpts = POSITION_OPTIONS.map(p =>
     `<option value="${esc(p)}" ${task.机位===p?'selected':''}>${p}</option>`).join('');
 
@@ -685,12 +816,22 @@ function buildModal(mode, task) {
       <label>结束时间 <input type="time" id="fEnd" value="${(task.止||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
       <label>时长(h) <input type="text" id="fDur" value="${task.时长h||2}" style="width:60px" readonly></label>
     </div>
+    <datalist id="dlCourse">${courseDatalist}</datalist>
+    <datalist id="dlClient">${clientDatalist}</datalist>
     <div class="form-row">
       <label>课目类型
-        <select id="fCourse">${courseOpts}</select>
+        <div class="combobox-wrap">
+          <input type="text" id="fCourse" list="dlCourse"
+            value="${esc(task.课目类型||'')}" placeholder="选择或输入课目类型" autocomplete="off">
+          <span class="cb-arrow">▼</span>
+        </div>
       </label>
       <label>客户航司
-        <select id="fClient">${clientOpts}</select>
+        <div class="combobox-wrap">
+          <input type="text" id="fClient" list="dlClient"
+            value="${esc(task.客户航司||'')}" placeholder="选择或输入航司" autocomplete="off">
+          <span class="cb-arrow">▼</span>
+        </div>
       </label>
     </div>
     <div class="form-row">
@@ -742,15 +883,28 @@ function saveTask(mode) {
   const totalMin = (eh*60+em) - (sh*60+sm);
   const duration = totalMin > 0 ? parseFloat((totalMin/60).toFixed(1)) : 0.25;
 
+  const courseVal = document.getElementById('fCourse').value.trim();
+  const clientVal = document.getElementById('fClient').value.trim();
+
+  // 新值自动追加进选项列表（本地 session 级别）
+  if (courseVal && !COURSE_OPTIONS.includes(courseVal)) {
+    COURSE_OPTIONS.push(courseVal);
+    toast(`课目「${courseVal}」已加入列表`, 'ok');
+  }
+  if (clientVal && !CLIENT_OPTIONS.includes(clientVal)) {
+    CLIENT_OPTIONS.push(clientVal);
+    toast(`航司「${clientVal}」已加入列表`, 'ok');
+  }
+
   const task = {
     日期: dateVal,
     起: `${dateVal} ${startVal}`,
     止: `${dateVal} ${endVal}`,
-    课目类型: document.getElementById('fCourse').value,
+    课目类型: courseVal,
     学员: document.getElementById('fStudents').value || null,
     教员: document.getElementById('fTrainer').value || null,
     检查员: document.getElementById('fInspector').value || null,
-    客户航司: document.getElementById('fClient').value,
+    客户航司: clientVal,
     机位: document.getElementById('fPos').value,
     时长h: duration
   };
@@ -865,6 +1019,96 @@ function clearAllChanges() {
 }
 
 // ══════════════════════════════════════════════
+// 发布到 GitHub Pages
+// ══════════════════════════════════════════════
+const GH_OWNER = 'zhangduo0055';
+const GH_REPO  = 'simulator-schedule-board';
+const GH_TOKEN_KEY = 'hnat_gh_token';
+
+async function publishToGitHub() {
+  // 1. 获取 Token（首次输入后存入 localStorage，无需每次输入）
+  let token = localStorage.getItem(GH_TOKEN_KEY) || '';
+  if (!token) {
+    token = prompt(
+      '请输入 GitHub Personal Access Token\n' +
+      '（只需输入一次，会记住在本浏览器中）\n\n' +
+      '如果没有，请在 GitHub → Settings → Developer settings → Tokens 生成。'
+    );
+    if (!token) return;
+    token = token.trim();
+    localStorage.setItem(GH_TOKEN_KEY, token);
+  }
+
+  const btn = document.getElementById('publishBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 发布中…';
+
+  try {
+    // 2. 合并有效任务（ALL + localStorage 变更），清理内部字段
+    const effectiveTasks = getEffectiveTasks().map(({_id, _status, ...t}) => t);
+
+    // 3. 获取当前页面 HTML，将 ALL 替换为最新合并数据
+    let html = document.documentElement.outerHTML;
+    html = html.replace(/const ALL = \[.*\];/, 'const ALL = ' + JSON.stringify(effectiveTasks) + ';');
+
+    // 4. 清空内嵌的 localStorage 变更标记（推送版本是干净基准）
+    html = html.replace(
+      /localStorage\.setItem\(LS_KEY, JSON\.stringify\([\s\S]*?\)\);/g,
+      '/* changes cleared on publish */'
+    );
+
+    const content = btoa(unescape(encodeURIComponent(html)));
+
+    // 5. 获取当前 index.html 的 SHA（更新时必须提供）
+    const shaRes = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/index.html`,
+      { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    let sha = null;
+    if (shaRes.ok) sha = (await shaRes.json()).sha;
+
+    // 6. 推送 index.html
+    const pushRes = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/index.html`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: '展板更新 ' + new Date().toLocaleString('zh-CN'),
+          content,
+          ...(sha ? { sha } : {})
+        })
+      }
+    );
+
+    if (!pushRes.ok) {
+      const err = await pushRes.json();
+      if (pushRes.status === 401) {
+        localStorage.removeItem(GH_TOKEN_KEY);
+        throw new Error('Token 无效或已过期，请重新输入');
+      }
+      throw new Error(err.message || `推送失败 (HTTP ${pushRes.status})`);
+    }
+
+    // 7. 发布成功后清空本地变更（已合并进发布版本）
+    saveChanges({ added: [], modified: {}, deleted: [] });
+    render();
+    toast('✅ 发布成功！大屏约30秒后自动刷新', 'success');
+
+  } catch (e) {
+    toast('❌ 发布失败：' + e.message, 'error');
+    console.error('publishToGitHub error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 发布到大屏';
+  }
+}
+
+// ══════════════════════════════════════════════
 // Toast 提示
 // ══════════════════════════════════════════════
 function toast(msg, type) {
@@ -878,6 +1122,12 @@ function toast(msg, type) {
 // 启动
 // ══════════════════════════════════════════════
 (function init() {
+  // 大屏展示模式：URL 带 ?mode=display 时隐藏所有编辑控件
+  if (new URLSearchParams(window.location.search).get('mode') === 'display') {
+    document.body.classList.add('display-mode');
+    document.title = '河南航投航空培训中心 · 模拟机排程 · 大屏展示';
+  }
+
   // 清理脏数据
   const raw = localStorage.getItem(LS_KEY);
   if (raw && (raw === 'null' || raw === 'undefined' || raw === '""')) {
@@ -894,6 +1144,16 @@ function toast(msg, type) {
   document.addEventListener('dragover', e => {
     if (!e.target.closest('.table-wrap')) return;
     e.preventDefault();
+  });
+  // 【document 级兜底】dragend 事件当元素脱离 DOM 后不会冒泡，
+  // 但通过 handleDragStart 里的 element-level 监听器已处理了主路径。
+  // 这里再加一层，防止任何意外情况导致 dragInfo 残留。
+  document.addEventListener('dragend', () => {
+    if (dragInfo) {
+      dragInfo = null;
+      document.querySelectorAll('.drop-target,.drop-invalid').forEach(c => c.classList.remove('drop-target','drop-invalid'));
+      render();
+    }
   });
   render();
 })();
