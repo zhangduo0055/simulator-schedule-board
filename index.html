@@ -38,13 +38,15 @@ body {
 .ctrl-btn.publish:hover { background:#2e1065; }
 .ctrl-btn.publish:disabled { opacity:.5; cursor:wait; }
 /* 大屏展示模式：隐藏编辑控件 */
-body.display-mode .right-ctrls { display:none !important; }
+/* 展示模式：整个工具栏全隐藏，iframe 里不出现第二个标题 */
+body.display-mode .toolbar { display:none !important; }
 body.display-mode .drag-handle,
 body.display-mode .resize-handle,
 body.display-mode .edit-icon { display:none !important; }
 body.display-mode .task-block { cursor:default !important; }
 body.display-mode .task-block[draggable] { -webkit-user-drag:none; }
-body.display-mode .table-wrap { max-height:calc(100vh - 80px); }
+/* 工具栏隐藏后，表格区可以占满全屏 */
+body.display-mode .table-wrap { max-height:100vh; }
 .change-badge {
   display:inline-flex; align-items:center; justify-content:center;
   width:22px; height:22px; border-radius:50%; background:var(--yellow);
