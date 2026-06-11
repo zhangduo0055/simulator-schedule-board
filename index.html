@@ -134,10 +134,13 @@ td.empty:nth-child(even) { background:#111d33; }
   position:absolute; right:8px; top:50%; transform:translateY(-50%);
   color:var(--muted); pointer-events:none; font-size:11px;
 }
-/* datalist 原生下拉在深色背景下颜色修复 */
-input::-webkit-calendar-picker-indicator { display:none !important; }
-.form-row label input[type="date"]::-webkit-calendar-picker-indicator,
-.form-row label input[type="time"]::-webkit-calendar-picker-indicator { display:block !important; filter:invert(1); }
+/* datalist 原生下拉在深色背景下颜色修复（仅隐藏 text 类型的 datalist 图标） */
+input[type="text"]::-webkit-calendar-picker-indicator { display:none !important; }
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator { filter:invert(1) brightness(1.5); cursor:pointer; }
+/* modal-box 允许 overflow visible 以免裁剪 picker 弹出层 */
+.modal-box { overflow:visible !important; }
+.modal-box .form-row { overflow:visible; }
 
 .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
 .form-actions button {
@@ -587,7 +590,7 @@ td.drop-invalid { background: rgba(239,68,68,.1) !important; }
   <div class="export-actions">
     <button class="ctrl-btn" onclick="copyExport()">📋 复制到剪贴板</button>
     <button class="ctrl-btn" onclick="downloadExport()">💾 下载 JSON 文件</button>
-    <button class="ctrl-btn" style="color:var(--muted)" onclick="document.getElementById('exportPanel').classList.remove('active')">关闭</button>
+    <button class="ctrl-btn" style="color:#fff;background:#374151;border:1px solid #4b5563" onclick="document.getElementById('exportPanel').classList.remove('active')">✕ 关闭</button>
   </div>
 </div>
 
@@ -1269,6 +1272,11 @@ function deleteTask() {
 // ══════════════════════════════════════════════
 function toggleExportPanel() {
   const panel = document.getElementById('exportPanel');
+  // 如果已经打开，则关闭（toggle 行为）
+  if (panel.classList.contains('active')) {
+    panel.classList.remove('active');
+    return;
+  }
   const ch = loadChanges();
   const total = (ch.added||[]).length + Object.keys(ch.modified||{}).length + (ch.deleted||[]).length;
 
@@ -1481,6 +1489,13 @@ function toast(msg, type) {
   ALL.forEach((t, i) => { if (!t._id) t._id = 'orig_' + i; });
   render();
 })();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal();
+    document.getElementById('exportPanel').classList.remove('active');
+  }
+});
+
 </script>
 
 
