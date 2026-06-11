@@ -42,7 +42,8 @@ body.display-mode .right-ctrls { display:none !important; }
 body.display-mode .drag-handle,
 body.display-mode .resize-handle,
 body.display-mode .edit-icon { display:none !important; }
-body.display-mode .task-block { cursor:default !important; pointer-events:none; }
+body.display-mode .task-block { cursor:default !important; }
+body.display-mode .task-block[draggable] { -webkit-user-drag:none; }
 body.display-mode .table-wrap { max-height:calc(100vh - 80px); }
 .change-badge {
   display:inline-flex; align-items:center; justify-content:center;
@@ -417,6 +418,8 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot
 let dragInfo = null;
 
 function handleDragStart(e) {
+  // 展示模式禁止拖拽
+  if (document.body.classList.contains('display-mode')) { e.preventDefault(); return; }
   const el = e.target.closest('.task-block');
   if (!el) return;
   dragInfo = {
