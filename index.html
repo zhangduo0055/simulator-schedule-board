@@ -137,7 +137,7 @@ td.empty:nth-child(even) { background:#111d33; }
 /* datalist 原生下拉在深色背景下颜色修复 */
 input::-webkit-calendar-picker-indicator { display:none !important; }
 .form-row label input[type="date"]::-webkit-calendar-picker-indicator,
-.form-row label input[type="time"]::-webkit-calendar-picker-indicator { filter:invert(1); }
+.form-row label input[type="time"]::-webkit-calendar-picker-indicator { display:block !important; filter:invert(1); }
 
 .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
 .form-actions button {
@@ -1095,8 +1095,9 @@ function openEditModal(id) {
 
 function openAddModal() {
   currentEditId = null;
+  const _dd = `${YEAR}-${MONTH.toString().padStart(2,'0')}-15`;
   buildModal('add', {
-    日期: `${YEAR}-${MONTH.toString().padStart(2,'0')}-15`, 起: '', 止: '',
+    日期: _dd, 起: `${_dd} 08:00`, 止: `${_dd} 10:00`,
     课目类型: '', 学员: '', 教员: '', 检查员: '',
     客户航司: '', 机位: 'B737NG-1', 时长h: 2
   });
@@ -1476,6 +1477,8 @@ function toast(msg, type) {
       render();
     }
   });
+  // 为历史数据补充稳定 _id（旧数据可能没有该字段，拖拽/编辑依赖此值）
+  ALL.forEach((t, i) => { if (!t._id) t._id = 'orig_' + i; });
   render();
 })();
 </script>
