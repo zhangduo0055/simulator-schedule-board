@@ -1110,10 +1110,14 @@ async function publishToGitHub() {
       throw new Error(err.message || `推送失败 (HTTP ${pushRes.status})`);
     }
 
-    // 5. 清空本地变更，刷新以拉取最新 data.json
+    // 5. 发布成功后直接用内存数据更新 ALL 并重新渲染
+    //    不用 location.reload()：reload 后需等 GitHub Pages CDN 更新（可能几分钟），
+    //    而数据此刻已经在内存里，直接渲染即可，效果即时可见。
+    ALL = effectiveTasks;
+    initIds();
     saveChanges({ added: [], modified: {}, deleted: [] });
-    toast('✅ 发布成功！页面即将刷新…', 'success');
-    setTimeout(() => location.reload(), 1800);
+    render();
+    toast('✅ 发布成功！数据已同步至 GitHub', 'success');
 
   } catch (e) {
     if (e.name === 'AbortError') {
@@ -1145,7 +1149,7 @@ function toast(msg, type) {
 (async function init() {
   // 从 GitHub 拉取最新数据（首次加载或刷新后）
   try {
-    const dataRes = await fetch(`https://zhangduo0055.github.io/${GH_REPO}/data.json?_=${Date.now()}`);
+    const dataRes = await fetch(`https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/data.json?_=${Date.now()}`);
     if (dataRes.ok) {
       const latestData = await dataRes.json();
       if (Array.isArray(latestData) && latestData.length > 0) {
