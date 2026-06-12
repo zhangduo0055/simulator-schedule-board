@@ -134,10 +134,10 @@ td.empty:nth-child(even) { background:#111d33; }
   position:absolute; right:8px; top:50%; transform:translateY(-50%);
   color:var(--muted); pointer-events:none; font-size:11px;
 }
-/* datalist 原生下拉在深色背景下颜色修复 */
-input::-webkit-calendar-picker-indicator { display:none !important; }
+/* datalist 原生下拉在深色背景下颜色修复（只隐藏 text 类型） */
+input[type="text"]::-webkit-calendar-picker-indicator { display:none !important; }
 .form-row label input[type="date"]::-webkit-calendar-picker-indicator,
-.form-row label input[type="time"]::-webkit-calendar-picker-indicator { filter:invert(1); }
+.form-row label input[type="time"]::-webkit-calendar-picker-indicator { display:block !important; filter:invert(1); cursor:pointer; }
 
 .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
 .form-actions button {
@@ -1280,32 +1280,24 @@ async function publishToGitHub() {
     // 2. 合并有效任务（ALL + localStorage 变更），清理内部字段
     const effectiveTasks = getEffectiveTasks().map(({_id, _status, ...t}) => t);
 
-    // 3. 获取当前页面 HTML，将 ALL 替换为最新合并数据
-    let html = document.documentElement.outerHTML;
-    // 修复：抓到的 DOM 里按钮是 disabled/发布中 状态，推送前必须还原为正常
-    html = html.replace(
-      /<button([^>]*)id="publishBtn"([^>]*)disabled=""([^>]*)>[^<]*/,
-      '<button$1id="publishBtn"$2$3>💾 保存并发布'
-    );
-    html = html.replace(/const ALL = \[.*\];/, 'const ALL = ' + JSON.stringify(effectiveTasks) + ';');
-
-    // 4. 清空内嵌的 localStorage 变更标记（推送版本是干净基准）
-    html = html.replace(
-      /localStorage\.setItem\(LS_KEY, JSON\.stringify\([\s\S]*?\)\);/g,
-      '/* changes cleared on publish */'
-    );
-
-    const content = btoa(unescape(encodeURIComponent(html)));
-
-    // 5. 获取当前 index.html 的 SHA（更新时必须提供）
-    const shaRes = await fetchWithTimeout(
+    // 3. 【关键修复】不再用 outerHTML（会把旧版CSS/JS盖回去），改为先从 GitHub 拉最新模板
+    const templateRes = await fetchWithTimeout(
       `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/index.html`,
       { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' } }
     );
-    let sha = null;
-    if (shaRes.ok) sha = (await shaRes.json()).sha;
+    if (!templateRes.ok) throw new Error('拉取模板失败: ' + templateRes.status);
+    
+    const templateData = await templateRes.json();
+    const sha = templateData.sha;
+    let html = decodeURIComponent(escape(atob(templateData.content)));
 
-    // 6. 推送 index.html
+    // 4. 只替换 ALL 数据，保留模板里的最新 CSS/JS 修复
+    html = html.replace(/const ALL = \[.*\];/, 'const ALL = ' + JSON.stringify(effectiveTasks) + ';');
+
+    const content = btoa(unescape(encodeURIComponent(html)));
+
+    // 5. 【SHA已在第3步获取，此处跳过重复请求】
+    // 6. 推送 index.html（SHA 已在第3步获取）
     const pushRes = await fetchWithTimeout(
       `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/index.html`,
       {
@@ -1409,6 +1401,8 @@ function toast(msg, type) {
       render();
     }
   });
+  // 为历史数据补充稳定 _id（旧数据可能没有该字段，拖拽/编辑依赖此值）
+  ALL.forEach((t, i) => { if (!t._id) t._id = 'orig_' + i; });
   render();
 })();
 </script>
