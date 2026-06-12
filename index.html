@@ -344,7 +344,13 @@ function taskId(t) {
 let idMap = {};  // id → original task
 function initIds() {
   idMap = {};
-  ALL.forEach((t,i) => { t._id = taskId(t); idMap[t._id] = t; });
+  ALL.forEach((t,i) => {
+    // 关键修复：如果任务已有 _id（来自 localStorage 修改记录或上次发布），保持不变；
+    // 只给新任务（没有 _id）生成 ID。这样能保证拖拽/修改后 ID 永久稳定，不会因为
+    // 时间字段变化而导致 localStorage 里的 modified 记录失效。
+    if (!t._id) t._id = taskId(t);
+    idMap[t._id] = t;
+  });
 }
 initIds();
 
@@ -1075,7 +1081,9 @@ async function publishToGitHub() {
 
   try {
     // 2. 合并有效任务，清理内部字段
-    const effectiveTasks = getEffectiveTasks().map(({_id, _status, ...t}) => t);
+    // 注意：保留 _id（让 data.json 里的每条任务都有稳定 ID），只去掉渲染用的 _status。
+    // 这样重新加载 data.json 后 initIds() 不会重新生成 ID，拖拽/修改记录永远对得上。
+    const effectiveTasks = getEffectiveTasks().map(({_status, ...t}) => t);
     const jsonContent = JSON.stringify(effectiveTasks, null, 2);
     const content = btoa(unescape(encodeURIComponent(jsonContent)));
 
