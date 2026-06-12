@@ -772,7 +772,7 @@ function openEditModal(id) {
 function openAddModal() {
   currentEditId = null;
   buildModal('add', {
-    日期: `${YEAR}-${MONTH.toString().padStart(2,'0')}-15`, 起: '', 止: '',
+    日期: `${YEAR}-${MONTH.toString().padStart(2,'0')}-15`, 起: '00:00', 止: '00:00',
     课目类型: '', 学员: '', 教员: '', 检查员: '',
     客户航司: '', 机位: 'B737NG-1', 时长h: 2
   });
@@ -798,8 +798,8 @@ function buildModal(mode, task) {
       </label>
     </div>
     <div class="form-row">
-      <label>开始时间 <input type="time" id="fStart" value="${(task.起||'').split(' ').pop()||''}" step="3600" onchange="snapToHour(this); calcDuration();"></label>
-      <label>结束时间 <input type="time" id="fEnd" value="${(task.止||'').split(' ').pop()||''}" step="3600" onchange="snapToHour(this); calcDuration();"></label>
+      <label>开始时间 <input type="time" id="fStart" value="${(task.起||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
+      <label>结束时间 <input type="time" id="fEnd" value="${(task.止||'').split(' ').pop()||''}" onchange="calcDuration()"></label>
       <label>时长(h) <input type="text" id="fDur" value="${task.时长h||2}" style="width:60px" readonly></label>
     </div>
     <datalist id="dlCourse">${courseDatalist}</datalist>
@@ -852,15 +852,6 @@ function calcDuration() {
   const mins = (eh*60+em) - (sh*60+sm);
   const dur = mins > 0 ? (mins/60) : 0;
   document.getElementById('fDur').value = dur.toFixed(1);
-}
-
-// 时间输入兜底：用户即使手敲非整点（比如 09:30），也强制归零到整点（09:00）
-// 因为业务上几乎都是整点开始/结束
-function snapToHour(input) {
-  const v = input.value;
-  if (!v) return;
-  const [h] = v.split(':');
-  input.value = h.padStart(2, '0') + ':00';
 }
 
 function saveTask(mode) {
