@@ -253,7 +253,7 @@ td.drop-invalid { background: rgba(239,68,68,.1) !important; }
     </select>
     <div class="stat-badge" id="stats"><strong>26</strong>场 · <strong>119</strong>小时 · <strong>2</strong>家航司</div>
     <button class="ctrl-btn export" onclick="toggleExportPanel()">📤 导出变更</button>
-    <button class="ctrl-btn publish" id="publishBtn" onclick="publishToGitHub()">🚀 发布到大屏</button>
+    <button class="ctrl-btn publish" id="publishBtn" onclick="publishToGitHub()">💾 保存并发布</button>
     <button class="ctrl-btn danger" onclick="clearAllChanges()">↺ 撤销变更</button>
     <span class="change-badge" id="changeBadge" style="display: inline-flex;">4</span>
   </div>
@@ -1265,7 +1265,7 @@ async function publishToGitHub() {
   // 安全兜底：30秒后自动解锁按钮，防止网络卡住永久 disabled
   const safetyTimer = setTimeout(() => {
     btn.disabled = false;
-    btn.textContent = '🚀 发布到大屏';
+    btn.textContent = '💾 保存并发布';
     toast('⚠️ 发布超时，请检查网络后重试', 'error');
   }, 30000);
 
@@ -1285,7 +1285,7 @@ async function publishToGitHub() {
     // 修复：抓到的 DOM 里按钮是 disabled/发布中 状态，推送前必须还原为正常
     html = html.replace(
       /<button([^>]*)id="publishBtn"([^>]*)disabled=""([^>]*)>[^<]*/,
-      '<button$1id="publishBtn"$2$3>🚀 发布到大屏'
+      '<button$1id="publishBtn"$2$3>💾 保存并发布'
     );
     html = html.replace(/const ALL = \[.*\];/, 'const ALL = ' + JSON.stringify(effectiveTasks) + ';');
 
@@ -1347,7 +1347,7 @@ async function publishToGitHub() {
   } finally {
     clearTimeout(safetyTimer);
     btn.disabled = false;
-    btn.textContent = '🚀 发布到大屏';
+    btn.textContent = '💾 保存并发布';
   }
 }
 
