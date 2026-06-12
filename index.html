@@ -972,15 +972,22 @@ function downloadExport() {
 async function clearAllChanges() {
   if (!confirm('确定要丢弃所有未发布的修改吗？\n\n会重新从 GitHub 拉取最新数据。')) return;
   try {
-    const dataRes = await fetch(`https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/data.json?_=${Date.now()}`);
-    if (!dataRes.ok) throw new Error('拉取失败');
-    const latestData = await dataRes.json();
+    // 用 Contents API 实时拉取（避免 CDN 缓存）
+    const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/data.json?_=${Date.now()}`;
+    const apiRes = await fetch(apiUrl, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!apiRes.ok) throw new Error('拉取失败 (HTTP ' + apiRes.status + ')');
+    const meta = await apiRes.json();
+    const decoded = decodeURIComponent(escape(atob(meta.content.replace(/\n/g, ''))));
+    const latestData = JSON.parse(decoded);
     if (!Array.isArray(latestData)) throw new Error('数据格式错误');
     ALL = latestData;
     initIds();
     document.getElementById('exportPanel').classList.remove('active');
     render();
-    toast('已恢复到 GitHub 最新版本', 'success');
+    toast('已恢复到 GitHub 最新版本（sha: ' + meta.sha.slice(0,7) + '）', 'success');
   } catch (e) {
     toast('恢复失败：' + e.message, 'error');
   }
@@ -1093,22 +1100,53 @@ function toast(msg, type) {
 // 启动
 // ══════════════════════════════════════════════
 (async function init() {
-  // 从 GitHub 拉取最新数据（每次刷新都强制拉取）
-  try {
-    const dataRes = await fetch(`https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/data.json?_=${Date.now()}`, { cache: 'no-store' });
-    if (dataRes.ok) {
-      const latestData = await dataRes.json();
-      if (Array.isArray(latestData) && latestData.length > 0) {
-        ALL = latestData;
-        initIds();
-        console.log('✅ 已加载最新数据:', latestData.length, '条');
+  // 从 GitHub 拉取最新数据
+  // 关键：用 Contents API 而不是 raw.githubusercontent.com
+  //   raw 有 5 分钟 CDN 缓存（即使加 ?_=t 也可能命中边缘节点）
+  //   Contents API 实时返回，无缓存
+  async function fetchLatestData() {
+    // 优先尝试 Contents API（实时无缓存）
+    try {
+      const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/data.json?_=${Date.now()}`;
+      const apiRes = await fetch(apiUrl, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (apiRes.ok) {
+        const meta = await apiRes.json();
+        const decoded = decodeURIComponent(escape(atob(meta.content.replace(/\n/g, ''))));
+        const data = JSON.parse(decoded);
+        if (Array.isArray(data) && data.length > 0) {
+          console.log('✅ 通过 GitHub API 拉取最新数据:', data.length, '条 (sha:', meta.sha.slice(0,7), ')');
+          return data;
+        }
       }
+    } catch (e) {
+      console.warn('⚠️ Contents API 失败，降级到 raw:', e.message);
     }
-  } catch (e) {
-    console.warn('⚠️ 无法拉取 data.json，使用内嵌数据:', e.message);
+    // 降级：raw.githubusercontent.com（带强缓存破坏）
+    try {
+      const rawRes = await fetch(`https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/data.json?t=${Date.now()}&r=${Math.random()}`, { cache: 'no-store' });
+      if (rawRes.ok) {
+        const data = await rawRes.json();
+        if (Array.isArray(data) && data.length > 0) {
+          console.log('✅ 通过 raw 拉取最新数据:', data.length, '条');
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ raw 也失败:', e.message);
+    }
+    return null;
   }
 
-  // 清理可能残留的旧 localStorage 变更（这套架构已不再需要）
+  const latest = await fetchLatestData();
+  if (latest) {
+    ALL = latest;
+    initIds();
+  }
+
+  // 清理可能残留的旧 localStorage 变更（已废弃这套架构）
   try { localStorage.removeItem(LS_KEY); } catch(e) {}
   try { localStorage.removeItem('hnat_data_version'); } catch(e) {}
 
