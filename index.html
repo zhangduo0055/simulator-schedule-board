@@ -8,7 +8,7 @@
 :root {
   --bg: #0f172a; --card: #1e293b; --border: #334155;
   --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
-  --row-h: 50px; --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+  --row-h: 56px; --green: #22c55e; --yellow: #eab308; --red: #ef4444;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -78,7 +78,7 @@ td.empty { background:#0f1a2e; }
 td.empty:nth-child(even) { background:#111d33; }
 
 .task-block {
-  width:100%; height:100%; padding:2px;
+  width:100%; height:100%; padding:4px 6px 4px 6px;
   display:flex; flex-direction:column; align-items:center;
   justify-content:center; border-radius:3px;
   cursor:pointer; transition:all .15s; min-height:var(--row-h);
@@ -86,9 +86,20 @@ td.empty:nth-child(even) { background:#111d33; }
   font-weight:600; letter-spacing:0.3px;
 }
 .task-block:hover { filter:brightness(1.12); transform:scale(1.03); z-index:10; box-shadow:0 4px 18px rgba(0,0,0,.5); }
-.task-block .client { font-size:12px; line-height:1.2; }
-.task-block .time { font-size:10px; opacity:.85; margin-top:1px; }
-.task-block .course { font-size:9px; opacity:.7; margin-top:1px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 行1：航司 + 科目 */
+.task-block .row1 { display:flex; align-items:baseline; gap:4px; max-width:100%; overflow:hidden; }
+.task-block .client { font-size:11px; font-weight:800; white-space:nowrap; flex-shrink:0; }
+.task-block .course { font-size:9.5px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* 行2：时间 */
+.task-block .time { font-size:9.5px; opacity:.85; margin-top:2px; white-space:nowrap; }
+/* 行3：人员 */
+.task-block .people { font-size:9px; opacity:.75; margin-top:2px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 拖拽把手 — 左下角，不占行高 */
+.task-block .drag-handle {
+  position:absolute; bottom:2px; left:3px;
+  font-size:8px; opacity:.35; line-height:1; pointer-events:none;
+  writing-mode:horizontal-tb; letter-spacing:-1px;
+}
 
 /* 变更标记 */
 .task-block.changed { border-left:4px solid var(--yellow); }
@@ -704,17 +715,22 @@ function render() {
             ? `margin-left:${lOff}px;width:calc(100% - ${lOff+rOff}px);`
             : '';
           const hasOffset = (lOff||rOff) ? ' has-offset' : '';
+          const hasPeople = !!(g.students||g.trainer||g.inspector);
           return `<div class="task-block${cls}${hasOffset}" style="background:${g.color.bg};color:${g.color.text};${offStyle}"
             draggable="true" data-task-id="${eid}" data-colspan="${g.colspan}" data-duration="${g.duration}"
             ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)"
             onclick="openEditModal('${eid}')"
             onmouseenter="showTip(event,'${esc(g.course)}','${esc(g.stStr)}','${esc(g.etStr)}','${esc(g.duration)}','${esc(g.students)}','${esc(g.trainer)}','${esc(g.inspector)}')"
             onmouseleave="hideTip()">
-            <span class="drag-handle" style="pointer-events:none">⋮⋮</span>
+            <span class="drag-handle">⋮⋮</span>
             <span class="edit-icon" style="pointer-events:none">✎</span>
             ${hasOffset ? `<span class="offset-badge" title="精确时间，非30分钟对齐" style="pointer-events:none">⏱</span>` : ''}
-            <span class="client" style="pointer-events:none">${esc(g.client.replace('航空',''))}</span>
+            <div class="row1" style="pointer-events:none">
+              <span class="client">${esc(g.client.replace('航空',''))}</span>
+              ${g.course && g.client !== '个人自费' ? `<span class="course">${esc(g.course)}</span>` : ''}
+            </div>
             <span class="time" style="pointer-events:none">${esc(g.stStr)}-${esc(g.etStr)} (${esc(g.duration)}h)</span>
+            ${hasPeople ? `<span class="people" style="pointer-events:none">${[g.students?'👤 '+esc(g.students):'', g.trainer?'🎓 '+esc(g.trainer):'', g.inspector?'🔍 '+esc(g.inspector):''].filter(Boolean).join('  ')}</span>` : ''}
             <span class="resize-handle" onmousedown="handleResizeStart(event,'${eid}')" onclick="event.stopPropagation()">║</span>
           </div>`;
         }).join('');
