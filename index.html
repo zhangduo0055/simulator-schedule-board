@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="900">
+<!-- 自动刷新由JS倒计时控制，见页面底部 -->
 <title>河南航投航空培训中心 · 模拟机排程展板（可编辑）</title>
 <style>
 :root {
@@ -1200,6 +1200,29 @@ function toast(msg, type) {
     }
   });
   render();
+
+  // ── 自动刷新倒计时 ──────────────────────────────────────────────
+  (function startRefreshCountdown() {
+    const TOTAL = 15 * 60; // 15分钟，单位：秒
+    let remaining = TOTAL;
+    const display = document.getElementById('countdown-display');
+
+    function tick() {
+      if (!display) return;
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if (remaining <= 0) {
+        window.location.reload();
+        return;
+      }
+      remaining--;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+  // ─────────────────────────────────────────────────────────────────
+
 })();
 </script>
 </body>
