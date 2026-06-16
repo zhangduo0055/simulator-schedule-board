@@ -240,6 +240,31 @@ td.drop-invalid { background: rgba(239,68,68,.1) !important; }
 }
 .export-panel .export-actions { display:flex; gap:8px; margin-top:10px; }
 .export-panel button { padding:8px 16px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
+
+/* 倒计时显示 */
+.countdown-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+.countdown-wrap svg {
+  width: 16px;
+  height: 16px;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.countdown-wrap .countdown-text { white-space: nowrap; }
+
 </style>
 </head>
 <body>
@@ -250,6 +275,15 @@ td.drop-invalid { background: rgba(239,68,68,.1) !important; }
     <span class="update-time" id="updateTime"></span>
   </div>
   <div class="right-ctrls">
+    <!-- 自动刷新倒计时 -->
+    <div class="countdown-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span class="countdown-text">自动刷新：<span id="countdown-display">14:59</span></span>
+    </div>
+
     <button class="ctrl-btn primary" onclick="openAddModal()">＋ 新增任务</button>
     <select id="craftFilter" onchange="render()">
       <option value="B737NG-1">🛩 B737NG-1</option>
